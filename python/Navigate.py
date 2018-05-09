@@ -10,21 +10,21 @@ def applyForces( t, Y, ratio ):
     """Computes the change in direction of relativistic-velocity (beta) for a nuclear fragment
     under the magnetic influence of the Sun as it propagates through the solar system.
     t in this context is not time.  It is the linear path displacement, s. 
-    Y is the state vector (rho, theta, z, beta_rho, beta_theta, beta_z) === (position, velocity).
+    Y is the state vector (x, y, z, beta_x, beta_y, beta_z) === (position, velocity).
     ratio === Z / E === (number protons / electronVolts) === [0..46]e-18 === [neutron..uranium]
     (i.e. intended for energy range [2..200]e18 eV, simplifying numerical assumption/requirement 
     np.dot(beta, beta) = 1. at all times).
-    returns dY/dt === (beta_rho, beta_theta, beta_z, freq_rho, freq_theta, freq_z) === (velocity, dv/ds=1/time=freq)
+    returns dY/dt === (beta_x, beta_y, beta_z, freq_x, freq_y, freq_z) === (velocity, dv/ds=1/time=freq)
     """
-    pos_rho , pos_theta , pos_z  = Y[0], Y[1], Y[2]
-    beta_rho, beta_theta, beta_z = Y[3], Y[4], Y[5]
+    pos_x , pos_y , pos_z  = Y[0], Y[1], Y[2]
+    beta_x, beta_y, beta_z = Y[3], Y[4], Y[5]
     
-    pos  = np.array([ pos_rho , pos_theta , pos_z  ])
-    beta = np.array([ beta_rho, beta_theta, beta_z ])
+    pos  = np.array([ pos_x , pos_y , pos_z  ])
+    beta = np.array([ beta_x, beta_y, beta_z ])
 
     ### enforce special relativity, aka numerical simplification: np.dot(beta,beta) == 1 == speed of light
     beta /= np.sqrt( np.dot(beta, beta) )
-    beta_rho, beta_theta, beta_z = beta[0], beta[1], beta[2]
+    beta_x, beta_y, beta_z = beta[0], beta[1], beta[2]
 
     """Forces
     """
@@ -34,10 +34,11 @@ def applyForces( t, Y, ratio ):
         """
         c = 3.e8 # meters / second === speed of light
         B = SolarMagneticModel.Bfield(__pos) # Tesla 
-        return __ratio * np.cross( __beta, c*B ) # (1/electronVolts) * (meters/second) * Tesla == 
+        B = np.array([0,1,1]) ### DEBUG
+        return __ratio * np.cross( __beta, c*B ) # (1/Volts) * (meters/second) * Tesla == 1/meters
 
-    freq_rho, freq_theta, freq_z = lorentzForce(ratio, pos, beta)
-    freq = np.array([ freq_rho, freq_theta, freq_z ])
+    freq_x, freq_y, freq_z = solarLorentzForce(ratio, pos, beta)
+    freq = np.array([ freq_x, freq_y, freq_z ])
     
     return np.concatenate(( beta, freq ))
 
@@ -87,20 +88,23 @@ Representation of the magnetic Lorentz force.
 
 initial_s    = 0
 initial_pos  = np.array([ 1, 0, 0 ])
-initial_beta = np.array([ -.707, -.707, 0 ])
+initial_beta = np.array([ -1, 0, 0 ])
 initial_conditions = np.concatenate(( initial_pos, initial_beta ))
-ratio = 46 * 10**(-18)
+ratio = -46 * 10**(-18)
 
 r = ode(applyForces).set_integrator('dori5')
 r.set_initial_value(initial_conditions, initial_s).set_f_params(ratio)
 
 AU2m = 149597870700. # use:  number [AU] * AU2m = converted number [m]
 final_s = 5 * AU2m   # track particle for 5 AU (in meters)
-ds = 1e-3 * AU2m     # numerical stepsize, ds distance (in meters)
+ds = 1e-6 * AU2m     # numerical stepsize, ds distance (in meters)
 positions = []
-while r.successful() and r.t < final_s:
+iterations = 0
+limit = 10000
+while (r.successful() and r.t < final_s) and (iterations < limit):
     r.integrate(r.t + ds)
     positions.append(r.y[:3] / AU2m)
+    iterations += 1
 
 positions = np.array(positions)
 
@@ -109,7 +113,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.plot3D(positions[:,0], positions[:,1]*AU2m, positions[:,2]*AU2m)
+ax.plot3D(positions[:,0], positions[:,1], positions[:,2])
 
 plt.show()
 #plt.plot( positions[:,1], positions[:,2] )

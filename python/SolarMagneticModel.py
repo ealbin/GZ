@@ -22,6 +22,7 @@ def solarB_rho(rho, theta, z):
     polar position in [astronomical units].
     returns a scalar magnetic field value in Gauss.
     """
+    
     ## Solar Dipole Component [Gauss]
     dipole = 0
     if np.abs(z) > 0:

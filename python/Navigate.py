@@ -28,14 +28,28 @@ def applyForces( t, Y, ratio ):
 
     """Forces
     """
+    def testLorentzForce( ignored, __pos, __beta ):
+        """Computes (and returns) d/ds(beta) for the uniform test field.
+        rule of thumb:  r = 2.23e-20 * E / ( Z * B )
+        r === radius [astronomical units]
+        E === energy [electronVolts]
+        Z === number of protons [unit-less]
+        B === magnetic field [Tesla]
+        If everything works correctly, result will be a circular orbit with
+        radius ~0.0005 [AU]
+        """
+        c = 2.99792458e8 # [meters / second] === speed of light
+        B = np.array([ 0, 0, 1 ]) # test field [Tesla]
+        __ratio = 46e-18 # [1/Volts] (uranium, Z=92, E=2e18 eV)
+        return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
+
     def solarLorentzForce( __ratio, __pos, __beta ):
-        """Computes (and returns) dBeta_dS from solar magnetic field influence.
+        """Computes (and returns) d/ds(beta) from solar magnetic field influence.
         Derivation in Appendix A below.
         """
-        c = 3.e8 # meters / second === speed of light
-        B = SolarMagneticModel.Bfield(__pos) # Tesla 
-        B = np.array([0,1,1]) ### DEBUG
-        return __ratio * np.cross( __beta, c*B ) # (1/Volts) * (meters/second) * Tesla == 1/meters
+        c = 2.99792458e8 # [meters / second] === speed of light
+        B = SolarMagneticModel.Bfield(__pos) # [Tesla] 
+        return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
 
     freq_x, freq_y, freq_z = solarLorentzForce(ratio, pos, beta)
     freq = np.array([ freq_x, freq_y, freq_z ])
@@ -100,8 +114,8 @@ final_s = 5 * AU2m   # track particle for 5 AU (in meters)
 ds = 1e-6 * AU2m     # numerical stepsize, ds distance (in meters)
 positions = []
 iterations = 0
-limit = 10000
-while (r.successful() and r.t < final_s) and (iterations < limit):
+#limit = 100000
+while (r.successful() and r.t < final_s):# and (iterations < limit):
     r.integrate(r.t + ds)
     positions.append(r.y[:3] / AU2m)
     iterations += 1

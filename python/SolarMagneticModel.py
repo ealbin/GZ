@@ -4,6 +4,7 @@ Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
 (2) Sunspot Dipoles
 (3) Solar Dynamo
 (4) Ring Current
+Coordinate system: (x,y,z) Sun === (0,0,0), Earth === (1,0,0)
 """
 import numpy as np
 import Transform
@@ -27,7 +28,7 @@ po = 1.      # [astronomical units]
 
 def solarDipole(cartesian_pos):
     """Compute the solar dipole component of the field model given 
-    cartesian position in [astronomical units].
+    cartesian position in [astronomical units].  
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
     polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]

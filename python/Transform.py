@@ -1,3 +1,4 @@
+import numpy as np
 
 def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     """Transform from cartesian x-y-z coordinates to polar rho-theta-z.

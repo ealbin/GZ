@@ -2,8 +2,13 @@
 
 """Compute the solar magnetic field as modeled in:
 Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
+(1) Solar Dipole
+(2) Sunspot Dipoles
+(3) Solar Dynamo
+(4) Ring Current
 """
 import numpy as np
+import Transform
 
 ### magnetic units:  1 Telsa = 1e4 Gauss
 Gauss2Tesla = 1e-4 # e.g. B-field [Gauss] * Gauss2Tesla = B-field [Tesla]
@@ -12,107 +17,196 @@ Gauss2Tesla = 1e-4 # e.g. B-field [Gauss] * Gauss2Tesla = B-field [Tesla]
 Bs = 2.      # [Gauss]
 Bo = -3.5e-5 # [Gauss]
 Bt =  3.5e-5 # [Gauss] 
+Bd = 1000.   # [Gauss]
 Ro = 0.00465 # Radius of the Sun [astronomical units]
+Rd = 0.1*Ro  # Sunspot dipole radius [astronomical units]
 po = 1.      # [astronomical units]
 
 ###########################################################################    
 
-def solarB_rho(rho, theta, z):
-    """Compute the polar rho-component of the solar magnetic field given 
-    polar position in [astronomical units].
-    returns a scalar magnetic field value in Gauss.
+
+def solarDipole(cartesian_pos):
+    """Compute the solar dipole component of the field model given 
+    cartesian position in [astronomical units].
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
+    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    rho       = polar_pos[0] # [astronomical units]
+    theta     = polar_pos[1] # [radians]
+    z         = polar_pos[2] # [astronomical units]
     
-    ## Solar Dipole Component [Gauss]
-    dipole = 0
+    ## B_rho [Gauss]
+    B_rho = 0
     if np.abs(z) > 0:
-        dipole = -(3./2.) * (Bs * Ro**3) * rho * z * (z**2 + rho**2)**(-5./2.)
+        B_rho = -(3./2.) * (Bs * Ro**3) * rho * z * (z**2 + rho**2)**(-5./2.)    
 
-    ## Solar Dynamo Component [Gauss]
-    dynamo = 0
-
-    ## Solar Ring Component [Gauss]
-    ring   = 0
-    if np.abs(rho) > 0:
-        ring = (Bo * po**2) * rho * (z**2 + rho**2)**(-3./2.)
-    if z < 0:
-        ring *= -1.
-
-    ## Solar Sunspot Component [Gauss]
-    sunspot = 0 
+    ## B_theta [Gauss]
+    B_theta  = 0
     
-    return ( dipole + dynamo + ring + sunspot ) # [Gauss]
+    ## B_z [Gauss]
+    B_z  = 0
+    if np.abs(rho) > 0:
+       B_z = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
+    
+    polar_B     = np.array([ B_rho, B_theta, B_z ])
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    return cartesian_B # [Gauss]
+
+
+def solarSunspot(cartesian_pos):
+    """Compute the solar sunspot component of the field model given 
+    cartesian position in [astronomical units].
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
+    """
+    x = cartesian_pos[0] # [astronomical units]
+    y = cartesian_pos[1] # [astronomical units]
+    z = cartesian_pos[2] # [astronomical units]
+    
+    N_dipoles = 180
+    dipole_thetas = np.linspace(0, 360, N_dipoles, endpoint=False) * np.pi / 180. # [radians]
+    sumB_x = 0
+    sumB_y = 0
+    sumB_z = 0
+    for dipole_theta in dipole_thetas:
+        dipole_x = Rd * np.cos(dipole_theta) # [astronomical units]
+        dipole_y = Rd * np.sin(dipole_theta) # [astronomical units]
+        dipole_z = 0                         # [astronomical units]
         
-def solarB_theta(rho, theta, z):
-    """Compute the polar theta-component of the solar magnetic field given polar
-    position in [astronomical units].
-    returns a scalar magnetic field value in Gauss.
-    """
-    ## Solar Dipole Component [Gauss]
-    dipole  = 0
+        ## relative distance from dipole to field point
+        rel_x = x - dipole_x # [astronomical units]
+        rel_y = y - dipole_y # [astronomical units]
+        rel_z = z - dipole_z # [astronomical units]
     
-    ## Solar Dynamo Component [Gauss]
-    dynamo  = 0
+        rel_cartesian = np.array([ rel_x, rel_y, rel_z ])
+        rel_polar     = Transform.cartesian2polar(rel_cartesian)[:3]
+        rho       = polar_pos[0] # [astronomical units]
+        theta     = polar_pos[1] # [radians]
+        z         = polar_pos[2] # [astronomical units]
+    
+        ## B_rho [Gauss]
+        B_rho = 0
+        if np.abs(z) > 0:
+            B_rho = -(3./2.) * (Bs * Ro**3) * rho * z * (z**2 + rho**2)**(-5./2.)    
+
+        ## B_theta [Gauss]
+        B_theta  = 0
+    
+        ## B_z [Gauss]
+        B_z  = 0
+        if np.abs(rho) > 0:
+           B_z = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
+    
+        polar_B     = np.array([ B_rho, B_theta, B_z ])
+        cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)
+
+        sumB_x += cartesian_B[0]
+        sumB_y += cartesian_B[1]
+        sumB_z += cartesian_B[2]
+        
+    return np.array([ sumB_x, sumB_y, sumB_z ]) # [Gauss]    
+
+
+def solarDynamo(cartesian_pos):
+    """Compute the solar dynamo component of the field model given 
+    cartesian position in [astronomical units].
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
+    """
+    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    rho       = polar_pos[0] # [astronomical units]
+    theta     = polar_pos[1] # [radians]
+    z         = polar_pos[2] # [astronomical units]    
+
+    ## B_rho [Gauss]
+    B_rho = 0
+
+    ## B_theta [Gauss]
+    B_theta  = 0
     if np.abs(rho) > 0:
-        dynamo  = (Bt * po) / rho
+        B_theta  = (Bt * po) / rho
     if z < 0:
-        dynamo *= -1.
+        B_theta *= -1.
+    
+    ## B_z [Gauss]
+    B_z = 0
+    
+    polar_B     = np.array([ B_rho, B_theta, B_z ])
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    return cartesian_B # [Gauss]    
 
-    ## Solar Ring Component [Gauss]        
-    ring    = 0
-    
-    ## Solar Sunspot Component [Gauss]
-    sunspot = 0
-    
-    return ( dipole + dynamo + ring + sunspot ) # [Gauss]
-    
-def solarB_z(rho, theta, z):
-    """Compute the polar z-component of the solar magnetic field given polar
-    position in [astronomical units].
-    returns a scalar magnetic field value in Gauss.
+
+### TODO
+def solarRingAkasofu(cartesian_pos):
+    """Compute the solar ring component of the field model given 
+    cartesian position in [astronomical units].
+    Follows the approximation made in Akasofu, Gray & Lee (1980).
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    ## Solar Dipole Component [Gauss]
-    dipole  = 0
-    if np.abs(rho) > 0:
-       dipole  = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
+    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    rho       = polar_pos[0] # [astronomical units]
+    theta     = polar_pos[1] # [radians]
+    z         = polar_pos[2] # [astronomical units]    
 
-    ## Solar Dynamo Component [Gauss]
-    dynamo  = 0
-
-    ## Solar Ring Component [Gauss]
-    ring    = 0
-    if np.abs(rho) > 0:
-       ring = (Bo * po**2) * np.abs(z) * (z**2 + rho**2)**(-3./2.)
-
-    ## Solar Sunspot Component [Gauss]
-    sunspot = 0
-
-    return ( dipole + dynamo + ring + sunspot ) # [Gauss]
-
-def solarBfield(position):
-    """Compute the **cartesian compoents** of the solar magnetic field given **cartesian**
-    position in [astronomical units].
-    returns a scalar magnetic field value in **Tesla**.
-    """
-    x = position[0] # [astronomical units]
-    y = position[1] # [astronomical units]
-    z = position[2] # [astronomical units]
+    print "DON'T CALL ME - I'M NOT IMPLEMENTED YET"
+    return np.array([ 0, 0, 0 ])
     
-    ### convert to polar
-    rho   = np.sqrt( x**2 + y**2 ) # [astronomical units]
-    theta = np.arctan2(y, x)       # [radians]
-    z     = z                      # [astronomical units]
 
-    B_rho   = solarB_rho(rho, theta, z)   # [Gauss]
-    B_theta = solarB_theta(rho, theta, z) # [Gauss]
-    B_z     = solarB_z(rho, theta, z)     # [Gauss]
+def solarRingEpele(cartesian_pos):
+    """Compute the solar ring component of the field model given 
+    cartesian position in [astronomical units].
+    Follows the approximation made in Epele, Mollerach & Roulet (1999).
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
+    """
+    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    rho       = polar_pos[0] # [astronomical units]
+    theta     = polar_pos[1] # [radians]
+    z         = polar_pos[2] # [astronomical units]    
+    ## B_rho [Gauss]
+    B_rho = 0
+    if np.abs(rho) > 0:
+        B_rho = (Bo * po**2) * rho * (z**2 + rho**2)**(-3./2.)
+    if z < 0:
+        B_rho *= -1.
 
-    ### convert back to cartesian
-    B_x = B_rho * np.cos(theta) - B_theta * np.sin(theta)
-    B_y = B_rho * np.sin(theta) + B_theta * np.cos(theta)
-    B_z = B_z
+    ## B_theta [Gauss]
+    B_theta = 0
 
-    B = np.array([ B_rho, B_theta, B_z ]) # [Gauss]
-    B *= Gauss2Tesla # [Tesla]
+    ## B_z [Gauss]
+    B_z = 0
+    if np.abs(rho) > 0:
+       B_z = (Bo * po**2) * np.abs(z) * (z**2 + rho**2)**(-3./2.)
 
-    return B # [Tesla]
+    polar_B     = np.array([ B_rho, B_theta, B_z ])
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    return cartesian_B # [Gauss]    
+
+
+### TODO
+def solarRingExact(cartesian_pos):
+    """Compute the solar ring component of the field model given 
+    cartesian position in [astronomical units].
+    Follows the exact integral formulation in Akasofu, Gray & Lee (1980).
+    returns a magnetic field density vector in cartesian coordinates in Gauss.
+    """
+    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    rho       = polar_pos[0] # [astronomical units]
+    theta     = polar_pos[1] # [radians]
+    z         = polar_pos[2] # [astronomical units]    
+
+    print "DON'T CALL ME - I'M NOT IMPLEMENTED YET"
+    return np.array([ 0, 0, 0 ])    
+
+
+def solarBfieldTesla(cartesian_pos):
+    """Compute the total cartesian compoents of the solar magnetic field 
+    given cartesian position in [astronomical units].
+    Uses the Epele approximation for the solar ring field.
+    returns a magnetic field density vector in Tesla.
+    """
+    B_dipole  = solarDipole(cartesian_pos)    # [Gauss]
+    B_sunspot = solarSunspot(cartesian_pos)   # [Gauss]
+    B_dynamo  = solarDynamo(cartesian_pos)    # [Gauss]
+    B_ring    = solarRingEpele(cartesian_pos) # [Gauss]
+    
+    B_total   = B_dipole + B_sunspot + B_dynamo + B_ring
+    B_total  *= Gauss2Tesla # [Tesla]
+    return B_total

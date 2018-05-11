@@ -1,0 +1,4 @@
+*.gitignore
+*.pyc
+*.ipynb_checkpoints
+*.swp

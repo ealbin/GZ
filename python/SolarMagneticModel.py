@@ -79,9 +79,9 @@ def solarSunspot(cartesian_pos):
     
         rel_cartesian = np.array([ rel_x, rel_y, rel_z ])
         rel_polar     = Transform.cartesian2polar(rel_cartesian)[:3]
-        rho       = polar_pos[0] # [astronomical units]
-        theta     = polar_pos[1] # [radians]
-        z         = polar_pos[2] # [astronomical units]
+        rho       = rel_polar[0] # [astronomical units]
+        theta     = rel_polar[1] # [radians]
+        z         = rel_polar[2] # [astronomical units]
     
         ## B_rho [Gauss]
         B_rho = 0
@@ -97,7 +97,7 @@ def solarSunspot(cartesian_pos):
            B_z = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
     
         polar_B     = np.array([ B_rho, B_theta, B_z ])
-        cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)
+        cartesian_B = Transform.polar2cartesian(rel_polar, vec=polar_B)
 
         sumB_x += cartesian_B[0]
         sumB_y += cartesian_B[1]

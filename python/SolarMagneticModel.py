@@ -196,7 +196,7 @@ def solarRingExact(cartesian_pos):
     return np.array([ 0, 0, 0 ])    
 
 
-def solarBfieldTesla(cartesian_pos):
+def sumBfieldTesla(cartesian_pos):
     """Compute the total cartesian compoents of the solar magnetic field 
     given cartesian position in [astronomical units].
     Uses the Epele approximation for the solar ring field.

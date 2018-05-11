@@ -8,6 +8,10 @@ def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     x = xyz[0] # [distance units]
     y = xyz[1] # [distance units]
     z = xyz[2] # [distance units]
+
+    vec_x = vec[0] # [any unit]
+    vec_y = vec[1] # [any unit]
+    vec_z = vec[2] # [any unit]
     
     ### convert to polar
     rho   = np.sqrt( x**2 + y**2 ) # [distance units]
@@ -28,6 +32,10 @@ def polar2cartesian( rtz, vec=np.array([0,0,0]) ):
     rho   = rtz[0] # [distance units]
     theta = rtz[1] # [radians]
     z     = rtz[2] # [distance units]
+    
+    vec_rho   = vec[0] # [any unit]
+    vec_theta = vec[1] # [any unit]
+    vec_z     = vec[2] # [any unit]
     
     ### convert to cartesian
     x = rho * np.cos(theta) # [distance units]

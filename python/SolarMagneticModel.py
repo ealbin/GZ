@@ -123,7 +123,7 @@ def solarDynamo(cartesian_pos):
     ## B_theta [Gauss]
     B_theta  = 0
     if np.abs(rho) > 0:
-        B_theta  = (Bt * po) / rho
+        B_theta  = (Bt * po) / float(rho)
     if z < 0:
         B_theta *= -1.
     

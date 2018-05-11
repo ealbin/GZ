@@ -1,9 +1,12 @@
+"""Transformations between coordinate systems
+"""
+
 import numpy as np
 
 def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     """Transform from cartesian x-y-z coordinates to polar rho-theta-z.
     Optionally also transform a cartesian vector into a polar one.
-    returns ( rho, theta, z, vec_rho, vec_theta, vec_z )
+    returns dictionary 'rtz':(position) and 'vec':(transformed vector)
     """
     x = xyz[0] # [distance units]
     y = xyz[1] # [distance units]
@@ -22,12 +25,13 @@ def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     vec_theta = -vec_x * np.sin(theta) + vec_y * np.cos(theta)
     vec_z     =  vec_z
 
-    return np.array([ rho, theta, z, vec_rho, vec_theta, vec_z ])
+    return { 'rtz':np.array([ rho, theta, z ]), 
+             'vec':np.array([ vec_rho, vec_theta, vec_z ]) }
 
 def polar2cartesian( rtz, vec=np.array([0,0,0]) ):
     """Transform from polar rho-theta-z coordinates to cartesian x-y-z.
     Optionally also transform a polar vector into a cartesian one.
-    returns ( x, y, z, vec_x, vec_y, vec_z )
+    returns dictionary 'xyz':(position) and 'vec':(transformed vector)
     """
     rho   = rtz[0] # [distance units]
     theta = rtz[1] # [radians]
@@ -46,4 +50,5 @@ def polar2cartesian( rtz, vec=np.array([0,0,0]) ):
     vec_y = vec_rho * np.sin(theta) + vec_theta * np.cos(theta)
     vec_z = vec_z
 
-    return np.array([ rho, theta, z, vec_x, vec_y, vec_z ])
+    return { 'xyz':np.array([ x, y, z ]), 
+             'vec':np.array([ vec_x, vec_y, vec_z ]) }

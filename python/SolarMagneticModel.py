@@ -31,7 +31,7 @@ def solarDipole(cartesian_pos):
     cartesian position in [astronomical units].  
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    polar_pos = Transform.cartesian2polar(cartesian_pos)['rtz']
     rho       = polar_pos[0] # [astronomical units]
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]
@@ -50,7 +50,7 @@ def solarDipole(cartesian_pos):
        B_z = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
     
     polar_B     = np.array([ B_rho, B_theta, B_z ])
-    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)['vec']
     return cartesian_B # [Gauss]
 
 
@@ -79,7 +79,7 @@ def solarSunspot(cartesian_pos):
         rel_z = z - dipole_z # [astronomical units]
 
         rel_cartesian = np.array([ rel_x, rel_y, rel_z ])
-        rel_polar     = Transform.cartesian2polar(rel_cartesian)[:3]
+        rel_polar     = Transform.cartesian2polar(rel_cartesian)['rtz']
         rho   = rel_polar[0] # [astronomical units]
         theta = rel_polar[1] # [radians]
         z     = rel_polar[2] # [astronomical units]
@@ -98,7 +98,7 @@ def solarSunspot(cartesian_pos):
            B_z = (1./2.) * (Bd * Rd**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
             
         polar_B     = np.array([ B_rho, B_theta, B_z ])
-        cartesian_B = Transform.polar2cartesian(rel_polar, vec=polar_B)[3:]
+        cartesian_B = Transform.polar2cartesian(rel_polar, vec=polar_B)['vec']
 
         sumB_x += cartesian_B[0]
         sumB_y += cartesian_B[1]
@@ -112,7 +112,7 @@ def solarDynamo(cartesian_pos):
     cartesian position in [astronomical units].
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    polar_pos = Transform.cartesian2polar(cartesian_pos)['rtz']
     rho       = polar_pos[0] # [astronomical units]
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    
@@ -131,7 +131,7 @@ def solarDynamo(cartesian_pos):
     B_z = 0
     
     polar_B     = np.array([ B_rho, B_theta, B_z ])
-    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)['vec']
     return cartesian_B # [Gauss]    
 
 
@@ -142,7 +142,7 @@ def solarRingAkasofu(cartesian_pos):
     Follows the approximation made in Akasofu, Gray & Lee (1980).
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    polar_pos = Transform.cartesian2polar(cartesian_pos)['rtz']
     rho       = polar_pos[0] # [astronomical units]
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    
@@ -157,7 +157,7 @@ def solarRingEpele(cartesian_pos):
     Follows the approximation made in Epele, Mollerach & Roulet (1999).
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    polar_pos = Transform.cartesian2polar(cartesian_pos)['rtz']
     rho       = polar_pos[0] # [astronomical units]
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    
@@ -177,7 +177,7 @@ def solarRingEpele(cartesian_pos):
        B_z = (Bo * po**2) * np.abs(z) * (z**2 + rho**2)**(-3./2.)
 
     polar_B     = np.array([ B_rho, B_theta, B_z ])
-    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)[3:]
+    cartesian_B = Transform.polar2cartesian(polar_pos, vec=polar_B)['vec']
     return cartesian_B # [Gauss]    
 
 
@@ -188,7 +188,7 @@ def solarRingExact(cartesian_pos):
     Follows the exact integral formulation in Akasofu, Gray & Lee (1980).
     returns a magnetic field density vector in cartesian coordinates in Gauss.
     """
-    polar_pos = Transform.cartesian2polar(cartesian_pos)[:3]
+    polar_pos = Transform.cartesian2polar(cartesian_pos)['rtz']
     rho       = polar_pos[0] # [astronomical units]
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    

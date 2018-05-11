@@ -1,5 +1,3 @@
-### TODO:URGENT:  solarB_z() is wrong(??) but the equations match the papers...?
-
 """Compute the solar magnetic field as modeled in:
 Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
 (1) Solar Dipole
@@ -9,6 +7,8 @@ Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
 """
 import numpy as np
 import Transform
+
+###########################################################################    
 
 ### magnetic units:  1 Telsa = 1e4 Gauss
 Gauss2Tesla = 1e-4 # e.g. B-field [Gauss] * Gauss2Tesla = B-field [Tesla]
@@ -86,7 +86,7 @@ def solarSunspot(cartesian_pos):
         ## B_rho [Gauss]
         B_rho = 0
         if np.abs(z) > 0:
-            B_rho = -(3./2.) * (Bs * Ro**3) * rho * z * (z**2 + rho**2)**(-5./2.)    
+            B_rho = -(3./2.) * (Bd * Rd**3) * rho * z * (z**2 + rho**2)**(-5./2.)    
 
         ## B_theta [Gauss]
         B_theta  = 0
@@ -94,7 +94,7 @@ def solarSunspot(cartesian_pos):
         ## B_z [Gauss]
         B_z  = 0
         if np.abs(rho) > 0:
-           B_z = (1./2.) * (Bs * Ro**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
+           B_z = (1./2.) * (Bd * Rd**3) * (rho**2 - 2*(z**2)) * (z**2 + rho**2)**(-5./2.)
     
         polar_B     = np.array([ B_rho, B_theta, B_z ])
         cartesian_B = Transform.polar2cartesian(rel_polar, vec=polar_B)
@@ -196,17 +196,25 @@ def solarRingExact(cartesian_pos):
     return np.array([ 0, 0, 0 ])    
 
 
+def sumBfieldGauss(cartesian_pos):
+    """Compute the total cartesian compoents of the solar magnetic field 
+    given cartesian position in [astronomical units].
+    Uses the Epele approximation for the solar ring field.
+    returns a magnetic field density vector in Gauss.
+    """
+    B_dipole  = solarDipole(cartesian_pos)    # [Gauss]
+    B_sunspot = solarSunspot(cartesian_pos)   # [Gauss]
+    B_dynamo  = solarDynamo(cartesian_pos)    # [Gauss]
+    B_ring    = solarRingEpele(cartesian_pos) # [Gauss]
+    B_total   = B_dipole + B_sunspot + B_dynamo + B_ring
+    return B_total # [Gauss]
+    
 def sumBfieldTesla(cartesian_pos):
     """Compute the total cartesian compoents of the solar magnetic field 
     given cartesian position in [astronomical units].
     Uses the Epele approximation for the solar ring field.
     returns a magnetic field density vector in Tesla.
     """
-    B_dipole  = solarDipole(cartesian_pos)    # [Gauss]
-    B_sunspot = solarSunspot(cartesian_pos)   # [Gauss]
-    B_dynamo  = solarDynamo(cartesian_pos)    # [Gauss]
-    B_ring    = solarRingEpele(cartesian_pos) # [Gauss]
-    
-    B_total   = B_dipole + B_sunspot + B_dynamo + B_ring
-    B_total  *= Gauss2Tesla # [Tesla]
-    return B_total
+    B_total  = sumBfieldGauss(cartesian_pos) # [Gauss]
+    B_total *= Gauss2Tesla # [Tesla]
+    return B_total # [Tesla]

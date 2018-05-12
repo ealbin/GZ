@@ -20,7 +20,7 @@ __BY = None
 __BZ = None
 
 
-def cartesianTesla(spacelimit=6, resolution=600, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
+def precompute(spacelimit=6, resolution=300, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
     """Returns total magnetic field X, Y, Z, BX, BY, BZ meshes by
     by disk-read or re-generation.  Field density in Teslas.
     
@@ -161,7 +161,7 @@ def cartesianTesla(spacelimit=6, resolution=600, autoload=True, directory='table
     return {'x':__x, 'y':__y, 'z':__z, 'BX':__BX, 'BY':__BY, 'BZ':__BZ}    
 
 
-def interpolate( cartesian_pos, close2sun=0.01 ):
+def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     """Returns cartesian [Tesla] values (Bx, By, Bz) for cartesian_pos = (x, y, z).
     If position is within close2sun radius [AU], do not interpolate, return exact (slow).
     """

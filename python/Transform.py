@@ -1,6 +1,5 @@
 """Transformations between coordinate systems
 """
-
 import numpy as np
 
 def cartesian2polar( xyz, vec=np.array([0,0,0]) ):

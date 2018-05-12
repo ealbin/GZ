@@ -168,7 +168,7 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
         return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
     
-    meshes = cartesianTesla()
+    meshes = precompute()
     x  = meshes['x']
     y  = meshes['y']
     z  = meshes['z']

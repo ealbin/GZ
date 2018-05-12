@@ -48,7 +48,7 @@ def applyForces( t, Y, ratio ):
         Derivation in Appendix A below.
         """
         c = 2.99792458e8 # [meters / second] === speed of light
-        B = SolarMagneticModel.Bfield(__pos) # [Tesla] 
+        B = SolarMagneticModel.sumBfieldTesla(__pos) # [Tesla] 
         return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
 
     freq_x, freq_y, freq_z = solarLorentzForce(ratio, pos, beta)
@@ -98,37 +98,3 @@ Representation of the magnetic Lorentz force.
         d/ds(beta^) = (Z / EeV) * cross-product( beta^, c*B )
 """
 
-
-
-initial_s    = 0
-initial_pos  = np.array([ 1, 0, 0 ])
-initial_beta = np.array([ -1, 0, 0 ])
-initial_conditions = np.concatenate(( initial_pos, initial_beta ))
-ratio = -46 * 10**(-18)
-
-r = ode(applyForces).set_integrator('dori5')
-r.set_initial_value(initial_conditions, initial_s).set_f_params(ratio)
-
-AU2m = 149597870700. # use:  number [AU] * AU2m = converted number [m]
-final_s = 5 * AU2m   # track particle for 5 AU (in meters)
-ds = 1e-6 * AU2m     # numerical stepsize, ds distance (in meters)
-positions = []
-iterations = 0
-#limit = 100000
-while (r.successful() and r.t < final_s):# and (iterations < limit):
-    r.integrate(r.t + ds)
-    positions.append(r.y[:3] / AU2m)
-    iterations += 1
-
-positions = np.array(positions)
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.plot3D(positions[:,0], positions[:,1], positions[:,2])
-
-plt.show()
-#plt.plot( positions[:,1], positions[:,2] )
-#plt.show()

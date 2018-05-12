@@ -136,7 +136,7 @@ def solarDynamo(cartesian_pos):
 
 
 ### TODO
-def solarRingAkasofu(cartesian_pos):
+def solarRingAGL(cartesian_pos):
     """Compute the solar ring component of the field model given 
     cartesian position in [astronomical units].
     Follows the approximation made in Akasofu, Gray & Lee (1980).
@@ -151,7 +151,7 @@ def solarRingAkasofu(cartesian_pos):
     return np.array([ 0, 0, 0 ])
     
 
-def solarRingEpele(cartesian_pos):
+def solarRingEMR(cartesian_pos):
     """Compute the solar ring component of the field model given 
     cartesian position in [astronomical units].
     Follows the approximation made in Epele, Mollerach & Roulet (1999).
@@ -200,13 +200,13 @@ def solarRingExact(cartesian_pos):
 def sumBfieldGauss(cartesian_pos):
     """Compute the total cartesian compoents of the solar magnetic field 
     given cartesian position in [astronomical units].
-    Uses the Epele approximation for the solar ring field.
+    Uses the EMR approximation for the solar ring field.
     returns a magnetic field density vector in Gauss.
     """
     B_dipole  = solarDipole(cartesian_pos)    # [Gauss]
     B_sunspot = solarSunspot(cartesian_pos)   # [Gauss]
     B_dynamo  = solarDynamo(cartesian_pos)    # [Gauss]
-    B_ring    = solarRingEpele(cartesian_pos) # [Gauss]
+    B_ring    = solarRingEMR(cartesian_pos)   # [Gauss]
     B_total   = B_dipole + B_sunspot + B_dynamo + B_ring
     return B_total # [Gauss]
     

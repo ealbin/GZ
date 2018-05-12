@@ -8,6 +8,10 @@ import os
 import SolarMagneticModel
 import Transform
 
+# global field values in memory
+#-------------------------------
+__spacelimit = None
+__resolution = None
 __x  = None
 __y  = None
 __z  = None
@@ -15,8 +19,8 @@ __BX = None
 __BY = None
 __BZ = None
 
-def cartesianTesla(spacelimit=10, resolution=10, autoload=True, 
-                   directory='tables', b_fname='cartesianBfield.Tesla'):
+
+def cartesianTesla(spacelimit=6, resolution=1000, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
     """Returns total magnetic field X, Y, Z, BX, BY, BZ meshes by
     by disk-read or re-generation.  Field density in Teslas.
     
@@ -37,6 +41,19 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
     returns dictionary { 'x', 'y', 'z', 'BX', 'BY', 'BZ' }
 
     """
+    # check if already loaded in memory, return and exit if so
+    #----------------------------------------------------------
+    global __spacelimit, __resolution
+    global __x, __y, __z, __BX, __BY, __BZ
+    
+    if ( (__spacelimit == spacelimit) and (__resolution == resolution) and
+         (__x is not None)  and (__y is not None)  and (__z is not None) and
+         (__BX is not None) and (__BY is not None) and (__BZ is not None) ):
+        return {'x':__x, 'y':__y, 'z':__z, 'BX':__BX, 'BY':__BY, 'BZ':__BZ}    
+
+    
+    # configure x,y,z and bx,by,bz
+    #------------------------------
     spacelimit = int( spacelimit ) # [astronomical units] (integer for easy file read)
     resolution = int( resolution ) # N divisions (integer for easy file read)
 
@@ -55,18 +72,20 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
     by = np.zeros(size) # [Tesla]
     bz = np.zeros(size) # [Tesla]    
 
+    # load from file or regenerate
+    #------------------------------
     regen = False
     if not autoload:
         regen = True
 
+    text_sep = ', '
+    base_dir  = os.path.dirname( os.path.abspath( SolarMagneticModel.__file__ ) )
     directory = 'tables'
     b_fname   = 'cartesianBfield.Tesla'
-    b_path    = os.path.abspath( os.path.join( os.path.curdir, directory, b_fname ) )
+    b_path    = os.path.abspath( os.path.join( base_dir, directory, b_fname ) )
     b_exists  = os.path.isfile(b_path)
     if (not b_exists):
         regen = True
-
-    text_sep = ', '
     
     # load from file if the file is good
     if (not regen):
@@ -74,7 +93,7 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
             header = b_f.readline()
             f_spacelimit = int( b_f.readline() )
             f_resolution = int( b_f.readline() )
-            f_shape      = np.fromstring( b_f.readline(), sep=text_sep )
+            f_shape      = np.fromstring( b_f.readline(), sep=text_sep )                            
             if ( f_spacelimit == spacelimit and 
                  f_resolution == resolution and 
                  f_shape == shape).all():
@@ -87,11 +106,10 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
             else:
                 regen = True
 
-    # for whatever circumstance, regenerate and overwrite
+    # regenerate and overwrite
     if regen:
         for i, (ix, iy, iz) in enumerate( zip( X.flatten(), Y.flatten(), Z.flatten() ) ):
             b_solar = SolarMagneticModel.sumBfieldTesla( np.array([ ix, iy, iz ]) )
-
             bx[i] = b_solar[0] # [Tesla]
             by[i] = b_solar[1] # [Tesla]
             bz[i] = b_solar[2] # [Tesla]
@@ -99,40 +117,40 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
         with open(b_path, 'w') as b_f:
             header = ( 'rows: 0:this header, 1:spacelimit [AU], 2:resolution, 3:shape, '
                        '4:x [AU], 5:y [AU], 6:z [AU], 7:BX [T], 8:BY [T], 9:BZ [T]' )
-            b_f.write(header + '\n')
 
+            # header and parameters
+            b_f.write(header + '\n')
             spacelimit.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-
             resolution.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-
             shape.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
+
+            # x, y, z
             x.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
             y.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
             z.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
+
+            # bx, by, bz
             bx.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
             by.tofile(b_f, sep=text_sep)
             b_f.write('\n')
-            
             bz.tofile(b_f, sep=text_sep)
             b_f.write('\n')
         
+    # load into memory
+    #------------------
     BX = bx.reshape(shape)
     BY = by.reshape(shape)
     BZ = bz.reshape(shape)
-   
-    global __x, __y, __z, __BX, __BY, __BZ
+
+    __spacelimit = spacelimit
+    __resolution = resolution
     __x  = x
     __y  = y
     __z  = z
@@ -140,25 +158,22 @@ def cartesianTesla(spacelimit=10, resolution=10, autoload=True,
     __BY = BY
     __BZ = BZ
     
-    return {'x':x, 'y':y, 'z':z, 'BX':BX, 'BY':BY, 'BZ':BZ}    
+    return {'x':__x, 'y':__y, 'z':__z, 'BX':__BX, 'BY':__BY, 'BZ':__BZ}    
 
 
 def interpolate( cartesian_pos ):
     """Returns cartesian [Tesla] values (Bx, By, Bz) for cartesian_pos = (x, y, z)
     """
-    global __x, __y, __z, __BX, __BY, __BZ       
-    if ( (__x is None )  or (__y is None)  or (__z is None) or
-         (__BX is None ) or (__BY is None) or (__BZ is None) ):
-       meshes = cartesianTesla()
-       __x  = meshes['x']
-       __y  = meshes['y']
-       __z  = meshes['z']
-       __BX = meshes['BX']
-       __BY = meshes['BY']
-       __BZ = meshes['BZ']
+    meshes = cartesianTesla()
+    x  = meshes['x']
+    y  = meshes['y']
+    z  = meshes['z']
+    BX = meshes['BX']
+    BY = meshes['BY']
+    BZ = meshes['BZ']
     
-    Bx = RegularGridInterpolator(cartesian_pos, __BX) # [Tesla]
-    By = RegularGridInterpolator(cartesian_pos, __BY) # [Tesla]
-    Bz = RegularGridInterpolator(cartesian_pos, __BZ) # [Tesla]    
+    Bx = RegularGridInterpolator((x,y,z), BX) # [Tesla]
+    By = RegularGridInterpolator((x,y,z), BY) # [Tesla]
+    Bz = RegularGridInterpolator((x,y,z), BZ) # [Tesla]    
 
-    return np.array([ Bx, By, Bz ])
+    return np.array([ Bx(cartesian_pos), By(cartesian_pos), Bz(cartesian_pos) ])

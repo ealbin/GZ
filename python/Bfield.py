@@ -5,6 +5,8 @@ numeric integration.
 from scipy.interpolate import RegularGridInterpolator
 import numpy as np
 import os
+import sys
+import time
 import SolarMagneticModel
 import Transform
 
@@ -20,7 +22,7 @@ __BY = None
 __BZ = None
 
 
-def precompute(spacelimit=6, resolution=300, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
+def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
     """Returns total magnetic field X, Y, Z, BX, BY, BZ meshes by
     by disk-read or re-generation.  Field density in Teslas.
     
@@ -28,6 +30,8 @@ def precompute(spacelimit=6, resolution=300, autoload=True, directory='tables', 
                 (x, y, z) === (-r to r) by (-r to r) by (-r to r) [astronomical units]
 
     resolution : the number of samples taken between (-r to r) along each dimension.
+                 resolution = 60 takes around 30 minutes to regenerate.
+                 resolution = 300 takes around 36 hours.
     
     autoload   : if True, look FIRST to disk for existing spacelimit/resolution.
                     if (no preexisting) or (incorrect spacelimit or resolution):
@@ -108,12 +112,22 @@ def precompute(spacelimit=6, resolution=300, autoload=True, directory='tables', 
 
     # regenerate and overwrite
     if regen:
+        i_max  = X.flatten().size
+        target = 0.
+        start  = time.time()
         for i, (ix, iy, iz) in enumerate( zip( X.flatten(), Y.flatten(), Z.flatten() ) ):
             b_solar = SolarMagneticModel.sumBfieldTesla( np.array([ ix, iy, iz ]) )
             bx[i] = b_solar[0] # [Tesla]
             by[i] = b_solar[1] # [Tesla]
             bz[i] = b_solar[2] # [Tesla]
-
+            # progress report for long regenerations
+            if ( i / float(i_max) ) >= ( target / 100. ):
+                print '\r                                                           \r',
+                print '  progress: {:.1f}%   elapsed: {:.2f} [sec]'.format(target, time.time() - start ),
+                sys.stdout.flush()
+                target += .1
+        print
+        
         with open(b_path, 'w') as b_f:
             header = ( 'rows: 0:this header, 1:spacelimit [AU], 2:resolution, 3:shape, '
                        '4:x [AU], 5:y [AU], 6:z [AU], 7:BX [T], 8:BY [T], 9:BZ [T]' )
@@ -161,7 +175,7 @@ def precompute(spacelimit=6, resolution=300, autoload=True, directory='tables', 
     return {'x':__x, 'y':__y, 'z':__z, 'BX':__BX, 'BY':__BY, 'BZ':__BZ}    
 
 
-def cartesianTesla( cartesian_pos, close2sun=0.01 ):
+def cartesianTesla( cartesian_pos, close2sun=0.05 ):
     """Returns cartesian [Tesla] values (Bx, By, Bz) for cartesian_pos = (x, y, z).
     If position is within close2sun radius [AU], do not interpolate, return exact (slow).
     """

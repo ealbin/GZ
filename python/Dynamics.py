@@ -78,6 +78,7 @@ Representation of the magnetic Lorentz force.
         p = gamma * mass * c * beta
 
     Lorentz force law:
+        d/dt(p) =   q   * cross-product( v, B )
         d/dt(p) = (Z*e) * cross-product( c*beta, B ) 
         
     Substitutions:
@@ -97,4 +98,3 @@ Representation of the magnetic Lorentz force.
     
         d/ds(beta^) = (Z / EeV) * cross-product( beta^, c*B )
 """
-

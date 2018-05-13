@@ -20,29 +20,37 @@ __z  = None
 __BX = None
 __BY = None
 __BZ = None
+__InterpolateBx = None
+__InterpolateBy = None
+__InterpolateBz = None
 
 
 def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
-    """Returns total magnetic field X, Y, Z, BX, BY, BZ meshes by
+    """Returns total magnetic field x, y, z, BX, BY, BZ meshes by
     by disk-read or re-generation.  Field density in Teslas.
     
     spacelimit : radial reach (r) of the space volume 
                 (x, y, z) === (-r to r) by (-r to r) by (-r to r) [astronomical units]
 
     resolution : the number of samples taken between (-r to r) along each dimension.
-                 resolution = 60 takes around 30 minutes to regenerate.
-                 resolution = 300 takes around 36 hours.
+                 In addition, there are another resolution's-worth of samples added to
+                 that set between (-r/10 to r/10) to resolve near the Sun better.
+                 resolution = 60 takes around 5 hours to regenerate.
     
-    autoload   : if True, look FIRST to disk for existing spacelimit/resolution.
-                    if (no preexisting) or (incorrect spacelimit or resolution):
+    autoload   : if True, look FIRST to disk for existing table.
+                    if (no preexisting) or (has different spacelimit or resolution):
                         regenerate from scratch and overwrite existing.
-                 if False, regenerate from scratch and overwrite existing.
+                 if False, force regenerate from scratch and overwrite existing.
     
     directory  : subdirectory with magnetic field text file
     
     b_fname    : filename for magnetic field text file
     
     returns dictionary { 'x', 'y', 'z', 'BX', 'BY', 'BZ' }
+                 x, y, z have shape (<=2*resolution,)
+                 BX, BY, BZ have shape (<=2*resolution, <=2*resolution, <=2*resolution)
+                 The <=2 is because some points are common to both (-r to r) and 
+                 (-r/10 to r/10), thus the shape is between (1 to 2)*resolution.
 
     """
     # check if already loaded in memory, return and exit if so
@@ -64,7 +72,11 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
     x = np.linspace(-spacelimit, spacelimit, resolution) # [astronomical units]
     y = np.linspace(-spacelimit, spacelimit, resolution) # [astronomical units]
     z = np.linspace(-spacelimit, spacelimit, resolution) # [astronomical units]
-
+    ## add extra points around the sun:
+    x = np.union1d(x, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
+    y = np.union1d(y, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
+    z = np.union1d(z, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
+    
     spacelimit = np.array([spacelimit])
     resolution = np.array([resolution])
 
@@ -175,23 +187,32 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
     return {'x':__x, 'y':__y, 'z':__z, 'BX':__BX, 'BY':__BY, 'BZ':__BZ}    
 
 
-def cartesianTesla( cartesian_pos, close2sun=0.05 ):
+def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     """Returns cartesian [Tesla] values (Bx, By, Bz) for cartesian_pos = (x, y, z).
     If position is within close2sun radius [AU], do not interpolate, return exact (slow).
+    For spacelimit==6 and resolution==60, interpolation is acceptable up to close2sun==0.01.
     """
-    if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
+    if ( (np.abs(cartesian_pos)[2] < close2sun) or 
+         (np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun) ):
         return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
     
-    meshes = precompute()
-    x  = meshes['x']
-    y  = meshes['y']
-    z  = meshes['z']
-    BX = meshes['BX']
-    BY = meshes['BY']
-    BZ = meshes['BZ']
+    global __InterpolateBx, __InterpolateBy, __InterpolateBz
+    if ( (__InterpolateBx is not None) and (__InterpolateBy is not None) and
+         (__InterpolateBz is not None) ):
+        Bx = __InterpolateBx(cartesian_pos)
+        By = __InterpolateBy(cartesian_pos)
+        Bz = __InterpolateBz(cartesian_pos)
+        return np.array([ Bx, By, Bz ])
+    else:
+        meshes = precompute()
+        x  = meshes['x']
+        y  = meshes['y']
+        z  = meshes['z']
+        BX = meshes['BX']
+        BY = meshes['BY']
+        BZ = meshes['BZ']
     
-    Bx = RegularGridInterpolator((x,y,z), BX) # [Tesla]
-    By = RegularGridInterpolator((x,y,z), BY) # [Tesla]
-    Bz = RegularGridInterpolator((x,y,z), BZ) # [Tesla]    
-
-    return np.array([ Bx(cartesian_pos), By(cartesian_pos), Bz(cartesian_pos) ])
+        __InterpolateBx = RegularGridInterpolator((x,y,z), BX) # [Tesla]
+        __InterpolateBy = RegularGridInterpolator((x,y,z), BY) # [Tesla]
+        __InterpolateBz = RegularGridInterpolator((x,y,z), BZ) # [Tesla]    
+        return cartesianTesla(cartesian_pos)

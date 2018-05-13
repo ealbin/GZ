@@ -6,6 +6,7 @@ from scipy.interpolate import RegularGridInterpolator
 import numpy as np
 import os
 import sys
+import tarfile
 import time
 import SolarMagneticModel
 import Transform
@@ -98,10 +99,17 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
     base_dir  = os.path.dirname( os.path.abspath( SolarMagneticModel.__file__ ) )
     directory = 'tables'
     b_fname   = 'cartesianBfield.Tesla'
+    b_fnameZip= b_fname + '.tar.gz' 
     b_path    = os.path.abspath( os.path.join( base_dir, directory, b_fname ) )
     b_exists  = os.path.isfile(b_path)
     if (not b_exists):
-        regen = True
+        zip_path = os.path.abspath( os.path.join( base_dir, directory, b_fnameZip ) )
+        if os.path.isfile(zip_path):
+            with tarfile.open(zip_path, 'r:gz') as tf:
+                tf.extractall( os.path.abspath( os.path.join( base_dir, directory) ) )
+                return precompute(spacelimit=spacelimit, resolution=resolution, autoload=autoload, directory=directory, b_fname=b_fname)
+        else:
+            regen = True
     
     # load from file if the file is good
     if (not regen):
@@ -192,8 +200,7 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     If position is within close2sun radius [AU], do not interpolate, return exact (slow).
     For spacelimit==6 and resolution==60, interpolation is acceptable up to close2sun==0.01.
     """
-    if ( (np.abs(cartesian_pos)[2] < close2sun) or 
-         (np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun) ):
+    if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
         return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
     
     global __InterpolateBx, __InterpolateBy, __InterpolateBz

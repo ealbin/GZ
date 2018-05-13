@@ -200,6 +200,7 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     If position is within close2sun radius [AU], do not interpolate, return exact (slow).
     For spacelimit==6 and resolution==60, interpolation is acceptable up to close2sun==0.01.
     """
+    cartesian_pos = np.array(cartesian_pos)
     if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
         return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
     

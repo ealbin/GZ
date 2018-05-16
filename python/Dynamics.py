@@ -1,8 +1,7 @@
-import SolarMagneticModel
+import Bfield
 import numpy as np
-from scipy.integrate import ode
-"""scipy.integrate.ode module interface solves equation systems of the form, y'(t) = f(t,y)
 
+"""scipy.integrate.ode module interface solves equation systems of the form, y'(t) = f(t,y)
 applyForces plays the role of f(t,y), returning the computation of y'(t)
 """
 
@@ -28,27 +27,27 @@ def applyForces( t, Y, ratio ):
 
     """Forces
     """
-    def testLorentzForce( ignored, __pos, __beta ):
-        """Computes (and returns) d/ds(beta) for the uniform test field.
-        rule of thumb:  r = 2.23e-20 * E / ( Z * B )
-        r === radius [astronomical units]
-        E === energy [electronVolts]
-        Z === number of protons [unit-less]
-        B === magnetic field [Tesla]
-        If everything works correctly, result will be a circular orbit with
-        radius ~0.0005 [AU]
-        """
-        c = 2.99792458e8 # [meters / second] === speed of light
-        B = np.array([ 0, 0, 1 ]) # test field [Tesla]
-        __ratio = 46e-18 # [1/Volts] (uranium, Z=92, E=2e18 eV)
-        return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
+    #def testLorentzForce( ignored, __pos, __beta ):
+    #    """Computes (and returns) d/ds(beta) for the uniform test field.
+    #    rule of thumb:  r = 2.23e-20 * E / ( Z * B )
+    #    r === radius [astronomical units]
+    #    E === energy [electronVolts]
+    #    Z === number of protons [unit-less]
+    #    B === magnetic field [Tesla]
+    #    If everything works correctly, result will be a circular orbit with
+    #    radius ~0.0005 [AU]
+    #    """
+    #    c = 2.99792458e8 # [meters / second] === speed of light
+    #    B = np.array([ 0, 0, 1 ]) # test field [Tesla]
+    #    __ratio = 46e-18 # [1/Volts] (uranium, Z=92, E=2e18 eV)
+    #    return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
 
     def solarLorentzForce( __ratio, __pos, __beta ):
         """Computes (and returns) d/ds(beta) from solar magnetic field influence.
         Derivation in Appendix A below.
         """
         c = 2.99792458e8 # [meters / second] === speed of light
-        B = SolarMagneticModel.sumBfieldTesla(__pos) # [Tesla] 
+        B = Bfield.cartesianTesla(__pos) # [Tesla] 
         return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
 
     freq_x, freq_y, freq_z = solarLorentzForce(ratio, pos, beta)

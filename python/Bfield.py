@@ -213,7 +213,7 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
         Bx = __InterpolateBx(cartesian_pos)
         By = __InterpolateBy(cartesian_pos)
         Bz = __InterpolateBz(cartesian_pos)
-        return np.array([ Bx, By, Bz ])
+        return np.array([ Bx, By, Bz ]).flatten()
     else:
         meshes = precompute()
         x  = meshes['x']

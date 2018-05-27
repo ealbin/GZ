@@ -2,7 +2,8 @@
 and use it as an interpolated look-up table to profoundly accelerate
 numeric integration.
 """
-from scipy.interpolate import RegularGridInterpolator
+from scipy import interpolate
+from scipy import optimize
 import numpy as np
 import os
 import sys
@@ -24,7 +25,6 @@ __BZ = None
 __InterpolateBx = None
 __InterpolateBy = None
 __InterpolateBz = None
-
 
 def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b_fname='cartesianBfield.Tesla'):
     """Returns total magnetic field x, y, z, BX, BY, BZ meshes by
@@ -222,8 +222,9 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
         BX = meshes['BX']
         BY = meshes['BY']
         BZ = meshes['BZ']
-    
-        __InterpolateBx = RegularGridInterpolator((x,y,z), BX) # [Tesla]
-        __InterpolateBy = RegularGridInterpolator((x,y,z), BY) # [Tesla]
-        __InterpolateBz = RegularGridInterpolator((x,y,z), BZ) # [Tesla]    
+        
+        __InterpolateBx = interpolate.RegularGridInterpolator((x,y,z), BX, bounds_error=False, fill_value=0) # [Tesla]
+        __InterpolateBy = interpolate.RegularGridInterpolator((x,y,z), BY, bounds_error=False, fill_value=0) # [Tesla]
+        __InterpolateBz = interpolate.RegularGridInterpolator((x,y,z), BZ, bounds_error=False, fill_value=0) # [Tesla]   
+        
         return cartesianTesla(cartesian_pos)

@@ -8,15 +8,18 @@ applyForces plays the role of f(t,y), returning the computation of y'(t)
 def applyForces( t, Y, ratio ):
     """Computes the change in direction of relativistic-velocity (beta) for a nuclear fragment
     under the magnetic influence of the Sun as it propagates through the solar system.
-    t in this context is not time.  It is the linear path displacement, s. 
-    Y is the state vector (x, y, z, beta_x, beta_y, beta_z) === (position, velocity).
+    t in this context is not time.  It is the linear path displacement, s [meters], or rather l [AU]. 
+    Y is the state vector (x, y, z, beta_x, beta_y, beta_z) === (position [AU], relativistic velocity [unit-less]).
     ratio === Z / E === (number protons / electronVolts) === [0..46]e-18 === [neutron..uranium]
     (i.e. intended for energy range [2..200]e18 eV, simplifying numerical assumption/requirement 
     np.dot(beta, beta) = 1. at all times).
-    returns dY/dt === (beta_x, beta_y, beta_z, freq_x, freq_y, freq_z) === (velocity, dv/ds=1/time=freq)
+    returns dY/dt === (beta_x, beta_y, beta_z, alpha_x, alpha_y, alpha_z) === (rel. velocity=unit-less, dv/dl=1/AU=alpha)
     """
-    pos_x , pos_y , pos_z  = Y[0], Y[1], Y[2]
-    beta_x, beta_y, beta_z = Y[3], Y[4], Y[5]
+    m_per_AU = 149597870700. # use:  position [AU] * m_per_AU = converted position [m]
+    c = 299792458. # [meters / second] === speed of light    
+    
+    pos_x , pos_y , pos_z  = Y[0], Y[1], Y[2] # [AU]
+    beta_x, beta_y, beta_z = Y[3], Y[4], Y[5] # [unit-less]
     
     pos  = np.array([ pos_x , pos_y , pos_z  ])
     beta = np.array([ beta_x, beta_y, beta_z ])
@@ -25,36 +28,17 @@ def applyForces( t, Y, ratio ):
     beta = beta / np.sqrt( np.dot(beta, beta) )
     beta_x, beta_y, beta_z = beta[0], beta[1], beta[2]
 
-    """Forces
-    """
-    def testLorentzForce( ignored, __pos, __beta ):
-        """Computes (and returns) d/ds(beta) for the uniform test field.
-        rule of thumb:  r = 2.23e-20 * E / ( Z * B )
-        r === radius [astronomical units]
-        E === energy [electronVolts]
-        Z === number of protons [unit-less]
-        B === magnetic field [Tesla]
-        If everything works correctly, result will be a circular orbit with
-        radius ~0.0005 [AU]
-        """
-        c = 2.99792458e8 # [meters / second] === speed of light
-        B = np.array([ 0, 0, 1 ]) # test field [Tesla]
-        __ratio = 46e-18 # [1/Volts] (uranium, Z=92, E=2e18 eV)
-        return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
-  
     def solarLorentzForce( __ratio, __pos, __beta ):
-        """Computes (and returns) d/ds(beta) from solar magnetic field influence.
+        """Computes (and returns) d/dl(beta) === (1/AU) from solar magnetic field influence.
         Derivation in Appendix A below.
         """
-        c = 2.99792458e8 # [meters / second] === speed of light
         B = Bfield.cartesianTesla(__pos) # [Tesla] 
-        return __ratio * np.cross( __beta, c*B ) # [(1/Volts) * (meters/second) * Tesla] == [1/meters]
+        return m_per_AU * __ratio * np.cross( __beta, c*B ) # [(meters/AU) * (1/Volts) * (meters/second) * Tesla] == [1/AU]
 
-    freq_x, freq_y, freq_z = testLorentzForce(ratio, pos, beta)
-    #freq_x, freq_y, freq_z = solarLorentzForce(ratio, pos, beta)    
-    freq = np.array([ freq_x, freq_y, freq_z ])
+    alpha_x, alpha_y, alpha_z = solarLorentzForce(ratio, pos, beta) # [1/AU]   
+    alpha = np.array([ alpha_x, alpha_y, alpha_z ])
     
-    return np.concatenate(( beta, freq ))
+    return np.concatenate(( beta, alpha ))
 
 """Appendix A.
 Representation of the magnetic Lorentz force.
@@ -64,7 +48,9 @@ Representation of the magnetic Lorentz force.
         beta^ === unit vector in the direction of beta
         beta  === velocity / speed of light [unit-less] (3-vector)
         B     === applied magnetic field [Tesla] (3-vector)
-        d/dt  === derivative with respect to t
+        d/dt  === derivative with respect to t, [1/seconds]
+        d/ds  === derivative with respect to displacement, [1 / meters]
+        d/dl  === derivative with respect to displacement, [1 / AU]
         e     === charge of a proton [coulombs] (scalar constant)
         E     === energy of nuclear fragment [Joules] (scalar constant)
         EeV   === energy of nuclear fragment [electronVolts] (scalar constant)
@@ -97,4 +83,8 @@ Representation of the magnetic Lorentz force.
     With EeV > 2e18 electronVolts, |beta| ~= 1, therefore beta ~= beta^:
     
         d/ds(beta^) = (Z / EeV) * cross-product( beta^, c*B )
+    
+    Changing units ds [meters] -> dl [astronomical units] * m_per_AU:
+    
+        d/dl(beta^) = m_per_AU * (Z / EeV) * cross-product( beta^, c*B )
 """

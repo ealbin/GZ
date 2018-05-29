@@ -30,7 +30,7 @@ def applyForces( t, Y, ratio ):
 
     def solarLorentzForce( __ratio, __pos, __beta ):
         """Computes (and returns) d/dl(beta) === (1/AU) from solar magnetic field influence.
-        Derivation in Appendix A below.
+        Derivation in the Appendix below.
         """
         B = Bfield.cartesianTesla(__pos) # [Tesla] 
         return m_per_AU * __ratio * np.cross( __beta, c*B ) # [(meters/AU) * (1/Volts) * (meters/second) * Tesla] == [1/AU]
@@ -40,8 +40,7 @@ def applyForces( t, Y, ratio ):
     
     return np.concatenate(( beta, alpha ))
 
-"""Appendix A.
-Representation of the magnetic Lorentz force.
+"""Appendix:  Representation of the magnetic Lorentz force.
 
     Definitions:
        |beta| === magnitude of vector beta

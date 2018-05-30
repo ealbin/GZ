@@ -1,8 +1,11 @@
 import numpy as np
+import platform
 from scipy import integrate
-import os
 import sys
 import time
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 import Dynamics
 
@@ -124,7 +127,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
     # save to disk
     with open(savefile, 'w') as file:
         file.write('whatami: result from Solve.trajectory\n')
-        file.write('system_info: {}\n'.format(os.uname()))
+        file.write('system_info: {}\n'.format(platform.uname()))
         file.write('elapsed_time[sec]: {}\n'.format(time.time()-start_time))
         file.write('algorithm: {}\n'.format(algorithm))
         file.write('stepsize[m]: {}\n'.format(stepsize))
@@ -153,6 +156,86 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         file.write('END OF LINE\n')
 
 def plot(filelist=None):
-    pass
-    # TODO:  read in files in filelist and make plots
+    fig = plt.figure(figsize=(15,10))
+    ax  = fig.gca(projection='3d')
+    ax.set_xlim(-6,6)
+    ax.set_ylim(-6,6)
+    ax.set_zlim(-6,6)
+    ax.set_xlabel('x [AU]')
+    ax.set_ylabel('y [AU]')
+    ax.set_zlabel('z [AU]')
+    ax.set_title('Trajectories')
+
+    for file in filelist:
+        with open(file) as f:
     
+            # chew first line (header)
+            line = f.readline()
+
+            # system info
+            line = f.readline()
+            system_info = line.split(':')[-1].strip()
+
+            # elapsed time [seconds]
+            line = f.readline()
+            elapsed = float( line.split(':')[-1].strip() )
+
+            # integration algorithm
+            line = f.readline()
+            algorithm = line.split(':')[-1].strip()
+
+            # stepsize [meters]
+            line = f.readline()
+            stepsize = float( line.split(':')[-1].strip() )
+
+            # integration status
+            line = f.readline()
+            int_status = line.split(':')[-1].strip()
+            # check if == 'successful'
+
+            # exit status
+            line = f.readline()
+            exit_status = line.split(':')[-1].strip()
+            # check if == 'near-earth'
+
+            # number of protons (Z)
+            line = f.readline()
+            Z = int( line.split(':')[-1].strip() )
+
+            # energy (E) [electronVolts]
+            line = f.readline()
+            E = float( line.split(':')[-1].strip() )
+
+            # start position [AU]
+            line = f.readline()
+            start_pos = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+
+            # start beta [unit-less]
+            line = f.readline()
+            start_beta = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+
+            # x positions [AU]
+            line = f.readline()
+            pos_x = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+
+            # y positions [AU]
+            line = f.readline()
+            pos_y = np.asarray([ float(y) for y in line.split(':')[-1].strip().strip(',').split(',') ])
+
+            # z positions [AU]
+            line = f.readline()
+            pos_z = np.asarray([ float(z) for z in line.split(':')[-1].strip().strip(',').split(',') ])
+
+            # final position [AU]
+            stop_pos = np.asarray([ pos_x[-1], pos_y[-1], pos_z[-1] ])
+
+            # final beta [unit-less]
+            stop_beta = stop_pos - np.asarray([ pos_x[-2], pos_y[-2], pos_z[-2] ])
+            stop_beta = stop_beta / np.sqrt( np.dot(stop_beta, stop_beta) )    
+    
+            # heading change [degrees]
+            delta_heading = np.arccos(np.dot( start_beta, stop_beta )) * 180. / np.pi
+    
+            ax.plot(pos_x, pos_y, pos_z)
+
+plt.show()        

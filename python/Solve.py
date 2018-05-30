@@ -151,4 +151,8 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         np.savetxt(file, z, delimiter=',', newline=',')
         file.write('\n')
         file.write('END OF LINE\n')
+
+def plot(filelist=None):
+    pass
+    # TODO:  read in files in filelist and make plots
     

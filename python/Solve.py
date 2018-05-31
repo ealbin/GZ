@@ -113,8 +113,8 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
             break
     
     # thin out data
-    sizecap  = 1000
-    skipsize = 100
+    sizecap  = 500
+    skipsize = 1000
     if len(positions) > 3*sizecap:
         front  = positions[:sizecap]
         middle = positions[sizecap+1:-sizecap-1:skipsize]
@@ -156,16 +156,52 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         file.write('END OF LINE\n')
 
 def plot(filelist=None):
-    fig = plt.figure(figsize=(15,10))
-    ax  = fig.gca(projection='3d')
-    ax.set_xlim(-6,6)
-    ax.set_ylim(-6,6)
-    ax.set_zlim(-6,6)
-    ax.set_xlabel('x [AU]')
-    ax.set_ylabel('y [AU]')
-    ax.set_zlabel('z [AU]')
-    ax.set_title('Trajectories')
+    fig_full = plt.figure(figsize=(15,10))
+    ax_full  = fig_full.gca(projection='3d')
+    ax_full.set_xlim(-6,6)
+    ax_full.set_ylim(-6,6)
+    ax_full.set_zlim(-6,6)
+    ax_full.set_xlabel('x [AU]')
+    ax_full.set_ylabel('y [AU]')
+    ax_full.set_zlabel('z [AU]')
+    ax_full.set_title('Trajectories')
 
+    fig_earth = plt.figure(figsize=(15,10))
+    ax_earth  = fig_earth.gca(projection='3d')
+    ax_earth.set_xlim(-10,10) # factors of Earth Radius
+    ax_earth.set_ylim(-10,10)
+    ax_earth.set_zlim(-10,10)
+    ax_earth.set_xlabel('x [Earth Radii]')
+    ax_earth.set_ylabel('y [Earth Radii]')
+    ax_earth.set_zlabel('z [Earth Radii]')
+    ax_earth.set_title('Near Earth Trajectories')
+
+    # draw earth
+    phi, theta = np.mgrid[0:2*np.pi:200j, 0:np.pi:100j]
+    x = ReAU * np.sin(theta) * np.cos(phi) + 1.
+    y = ReAU * np.sin(theta) * np.sin(phi)
+    z = ReAU * np.cos(theta)
+    ax_full.plot_wireframe(x, y, z, color="b")    
+    ax_earth.plot_wireframe((x-1.)/ReAU, y/ReAU, z/ReAU, color="b")    
+    
+    fig_sun = plt.figure(figsize=(15,10))
+    ax_sun  = fig_sun.gca(projection='3d')
+    ax_sun.set_xlim(-50, 50)  # factors of Sun Radius
+    ax_sun.set_ylim(-50, 50)
+    ax_sun.set_zlim(-50, 50)
+    ax_sun.set_xlabel('x [Sun Radii]')
+    ax_sun.set_ylabel('y [Sun Radii]')
+    ax_sun.set_zlabel('z [Sun Radii]')
+    ax_sun.set_title('Near Sun Trajectories')
+
+    # draw sun
+    phi, theta = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
+    x = RsAU * np.sin(theta) * np.cos(phi)
+    y = RsAU * np.sin(theta) * np.sin(phi)
+    z = RsAU * np.cos(theta)
+    ax_full.plot_wireframe(x, y, z, color="y")    
+    ax_sun.plot_wireframe(x/RsAU, y/RsAU, z/RsAU, color="y")    
+    
     for file in filelist:
         with open(file) as f:
     
@@ -235,7 +271,22 @@ def plot(filelist=None):
     
             # heading change [degrees]
             delta_heading = np.arccos(np.dot( start_beta, stop_beta )) * 180. / np.pi
-    
-            ax.plot(pos_x, pos_y, pos_z)
 
-plt.show()        
+            print 'file: {}'.format(file)
+            print 'elapsed time: {}'.format(elapsed)
+            print 'exit statii: {}, {}'.format(int_status, exit_status)
+            print 'Z, E: {}, {}'.format(Z, E)
+            last_beta = np.array([pos_x[-1], pos_y[-1], pos_z[-1]]) - np.array([pos_x[-2], pos_y[-2], pos_z[-2]])
+            last_beta = last_beta / np.sqrt(np.dot(last_beta, last_beta))
+            print 'Heading change [degrees]: {}'.format( np.arccos(start_beta, last_beta) )
+            last_pos_earth = np.array([pos_x[-1] - 1., pos_y[-1], pos_z[-1]]) 
+            print 'End distance from Earth [Earth Radii]: {}'.format( np.sqrt(np.dot(last_pos_earth, last_pos_earth))/ReAU )
+            print 'End coordinate location [AU]: {}, {}, {}'.format( pos_x[-1], pos_y[-1], pos_z[-1] )
+            print 'End coordinate location from Earth [Earth Radii]: {}'.format(last_pos_earth/ReAU)            
+            print
+            
+            ax_full.plot(pos_x, pos_y, pos_z)
+            ax_earth.plot((pos_x-1.)/ReAU, pos_y/ReAU, pos_z/ReAU)
+            ax_sun.plot(pos_x/RsAU, pos_y/RsAU, pos_z/RsAU)
+
+    plt.show()        

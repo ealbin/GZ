@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=test
 #SBATCH -t 0:30:00
-#SBATCH -o /dev/null
+######ignore for now########SBATCH -o /dev/null
 #SBATCH -p atlas_all
 #SBATCH --mem=1400
 

@@ -44,7 +44,7 @@ phi_list    = np.linspace(0, 2*np.pi, 21)[:-1] # 0, 18, 36, ..., 324, 342 [deg] 
 
 N_combinations = ( species_list.size * energy_list.size * 
                    radii_list.size * theta_list.size * phi_list.size )
-print 'N combinations = {}'.format(N_combinations)
+print 'N combinations = {0}'.format(N_combinations)
 
 est_filesize = 1.       # [MB]
 est_elapsed_time = 180. # [seconds]

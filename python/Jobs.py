@@ -11,7 +11,7 @@ data_directory = '/DFS-L/DATA/atlas/ealbin/GZ'
 N_nodes = 7
 N_cpus_per_node = 16
 N_cpus = N_nodes * N_cpus_per_node
-print 'N cluster cpus: {}'.format(N_cpus)
+print 'N cluster cpus: {0}'.format(N_cpus)
 
 # convienient constants
 Z_neutron  = 0
@@ -48,14 +48,14 @@ print 'N combinations = {}'.format(N_combinations)
 
 est_filesize = 1.       # [MB]
 est_elapsed_time = 180. # [seconds]
-print 'Estimated completed filesize: {} [GB]'.format(est_filesize * N_combinations / 1000.)
-print 'Estimated time to completion: {} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
+print 'Estimated completed filesize: {0} [GB]'.format(est_filesize * N_combinations / 1000.)
+print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
 
 # organize by:
 # GZ/energy/radius/theta_phi_Z.dat
 for E in energy_list:
     for R in radii_list:
-        dirname  = os.path.join( 'energy_{}e18'.format(int(E/1e18)), 'radius_{}'.format(R) )
+        dirname  = os.path.join( 'energy_{0}e18'.format(int(E/1e18)), 'radius_{0}'.format(R) )
         fullpath = os.path.join(data_directory, dirname)
         if not os.path.isdir(fullpath):
             os.makedirs(fullpath)
@@ -63,7 +63,7 @@ for E in energy_list:
         for T in theta_list:
             for P in phi_list:
                 for Z in Z_list:
-                    filename = 'theta_{}_phi_{}_Z_{}.dat'.format( int(T*180./np.pi), int(P*180./np.pi), Z )
+                    filename = 'theta_{0}_phi_{1}_Z_{2}.dat'.format( int(T*180./np.pi), int(P*180./np.pi), Z )
                     filepath = os.path.join( fullpath, filename )
                     start_x = R * np.sin(T) * np.cos(P)
                     start_y = R * np.sin(T) * np.sin(P)

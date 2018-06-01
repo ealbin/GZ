@@ -17,4 +17,4 @@
 # 6) save filepath
 
 cd ../python
-python -c "import Solve; print 'Solve.trajectory([$1, $2, $3], $4, $5, savefile=\"$6\")'"
+python -c "import Solve; Solve.trajectory([$1, $2, $3], $4, $5, savefile=\"$6\")"

@@ -2,7 +2,7 @@
 
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=test
-#SBATCH -t 8:00:00
+#SBATCH -t 0:30:00
 #SBATCH -o /dev/null
 #SBATCH -p atlas_all
 #SBATCH --mem=1400
@@ -16,4 +16,5 @@
 # 5) energy
 # 6) save filepath
 
+cd ../python
 python -c "import Solve; print 'Solve.trajectory([$1, $2, $3], $4, $5, savefile=\"$6\")'"

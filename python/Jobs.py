@@ -69,6 +69,6 @@ for E in energy_list:
                     start_y = R * np.sin(T) * np.sin(P)
                     start_z = R * np.cos(T)
                     
-                    subprocess.call(['sbatch', 'sbatch_interface.sh', 
+                    subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
                                      str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
                     sys.exit()

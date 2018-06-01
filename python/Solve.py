@@ -4,9 +4,6 @@ from scipy import integrate
 import sys
 import time
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
 import Dynamics
 
 # physical constants / conversions
@@ -156,6 +153,10 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         file.write('END OF LINE\n')
 
 def plot(filelist=None):
+    # these are not available on gpatlas
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+
     fig_full = plt.figure(figsize=(15,10))
     ax_full  = fig_full.gca(projection='3d')
     ax_full.set_xlim(-6,6)

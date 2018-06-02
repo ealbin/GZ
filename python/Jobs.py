@@ -73,5 +73,4 @@ for E in energy_list:
                     subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
                                      str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
                     time.sleep(0.1)
-                    
-                    
+

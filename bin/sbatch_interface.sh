@@ -1,7 +1,7 @@
 #!/bin/env bash
 
 #SBATCH --cpus-per-task=1
-#SBATCH --job-name=test
+#SBATCH --job-name=GZ_$5_$6
 #SBATCH -t 0:20:00
 #SBATCH -o /dev/null
 #SBATCH -p atlas_all

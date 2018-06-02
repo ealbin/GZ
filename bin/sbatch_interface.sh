@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=GZ
 #SBATCH -t 0:20:00
-#SBATCH -o /home/ealbin/GZ/slurm
+#SBATCH -o /dev/null
 #SBATCH -p atlas_all
 #SBATCH --mem=1400
 

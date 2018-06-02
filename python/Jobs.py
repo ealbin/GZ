@@ -8,7 +8,7 @@ import sys
 import time
 
 # cluster information (gpatlas)
-data_directory = '/DFS-L/DATA/atlas/ealbin/GZ'
+data_directory = '/beegfs/DATA/atlas/ealbin/GZ'
 N_nodes = 7
 N_cpus_per_node = 16
 N_cpus = N_nodes * N_cpus_per_node
@@ -73,5 +73,3 @@ for E in energy_list:
                     subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
                                      str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
                     time.sleep(0.1)
-                    sys.exit()
-                    

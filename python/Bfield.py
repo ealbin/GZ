@@ -96,7 +96,9 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
         regen = True
 
     text_sep = ', '
-    base_dir  = os.path.dirname( os.path.abspath( SolarMagneticModel.__file__ ) )
+    #base_dir  = os.path.dirname( os.path.abspath( SolarMagneticModel.__file__ ) )
+    # cluster hack:
+    base_dir  = '/home/ealbin/GZ/python'
     directory = 'tables'
     b_fname   = 'cartesianBfield.Tesla'
     b_fnameZip= b_fname + '.tar.gz' 

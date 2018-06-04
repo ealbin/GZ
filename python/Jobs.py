@@ -96,7 +96,7 @@ def writeJobs(N_jobs=1000, N_paths_per_job=100):
     masterlist.reverse()
     
     jobs_submitted = 0    
-    while (jobs_submitted < N_jobs):
+    while (jobs_submitted < N_jobs and len(masterlist) > 0):
         jobs_submitted += 1
         
         with open( os.path.join(jobs_directory, 'job_{0:06}.txt'.format(jobs_submitted)), 'w' ) as job_file:
@@ -109,8 +109,4 @@ def writeJobs(N_jobs=1000, N_paths_per_job=100):
     with open(masterlistpath, 'w') as master_file:
         for job in masterlist:
             master_file.write(job)
-    
-    
-    
-    
     

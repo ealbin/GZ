@@ -132,7 +132,7 @@ def submit(job_cap=None):
     
     for i, job in enumerate(jobs):
         if job_cap is not None:
-            if i > job_cap:
+            if i+1 > job_cap:
                 break
         subprocess.call(['sbatch', '../bin/sbatch_interface.sh', os.path.join(jobs_directory, job) ])
         time.sleep(0.1)

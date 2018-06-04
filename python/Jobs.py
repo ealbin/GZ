@@ -76,7 +76,7 @@ with open(masterlistpath,'w') as f:
                         start_y = R * np.sin(T) * np.sin(P)
                         start_z = R * np.cos(T)
                     
-                        f.write( '{0} {1} {2} {3} {4} {5} {6}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
+                        f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
                         #subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
                         #                 str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
                         #time.sleep(0.1)

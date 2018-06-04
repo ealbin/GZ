@@ -127,7 +127,8 @@ def submit(job_cap=None):
     global jobs_directory
     
     jobs = os.listdir(jobs_directory)
-    jobs = [j for j in jobs.sort() if j.find('job_') == 0]
+    jobs.sort()
+    jobs = [j for j in jobs if j.find('job_') == 0]
     
     for i, job in enumerate(jobs):
         if job_cap is not None:

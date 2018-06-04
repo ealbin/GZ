@@ -134,5 +134,5 @@ def submit(job_cap=None):
         if job_cap is not None:
             if i+1 > job_cap:
                 break
-        subprocess.call(['sbatch', '../bin/sbatch_interface.sh', os.path.join(jobs_directory, job) ])
+        subprocess.call(['sbatch', '../bin/slurm_batch.sh', os.path.join(jobs_directory, job) ])
         time.sleep(0.1)

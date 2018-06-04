@@ -1,5 +1,8 @@
-"""Create masterlist of Jobs
-Kick-off jobs on the gpatlas cluster
+"""
+1) Create masterlist of jobs: Jobs.masterlist()
+    (sweep parameters are located here)
+2) Write individual job files: Jobs.bundle()
+3) Kick-off jobs on the gpatlas cluster: Jobs.submit()
 """
 
 import numpy as np
@@ -15,7 +18,11 @@ if not os.path.isdir(jobs_directory):
     os.makedirs(jobs_directory)
 masterlistpath = os.path.join(jobs_directory, 'master_list.txt')
 
-def masterList(N_nodes=7, OVERWRITE=False):
+def masterlist(N_nodes=7, OVERWRITE=False):
+    """Create masterlist of jobs to be done.
+    N_nodes is only used for estimating time to completion.
+    OVERWRITE = True will overwrite existing computations.
+    """
     global data_directory, masterlistpath
     
     N_nodes = 7
@@ -40,9 +47,9 @@ def masterList(N_nodes=7, OVERWRITE=False):
     Z_xenon    = 54
     Z_uranium  = 92
 
-    # Sweep parameters
-    #--------------------------------
-    #--------------------------------
+    ##################################
+    #       Sweep parameters
+    #---------------------------------
     Z_list = np.array([Z_neutron, Z_proton, Z_alpha, Z_oxygen, Z_iron, Z_uranium])
 
     energy_list = np.array([2e18])#, 20e18, 200e18])
@@ -50,15 +57,15 @@ def masterList(N_nodes=7, OVERWRITE=False):
     radii_list  = np.linspace(0, 6, 61)[1:-1]      # 0.1, 0.2, ..., 5.8, 5.9 [AU]
     theta_list  = np.linspace(0, np.pi, 21)[1:-1]  # 9, 18, 27, ..., 162, 171 [deg] (actually radians)
     phi_list    = np.linspace(0, 2*np.pi, 21)[:-1] # 0, 18, 36, ..., 324, 342 [deg] (actually radians)
-    #--------------------------------
-    #--------------------------------
+    #---------------------------------
+    ##################################
 
     N_combinations = ( Z_list.size * energy_list.size * 
                        radii_list.size * theta_list.size * phi_list.size )
     print 'N combinations = {0}'.format(N_combinations)
 
-    est_filesize = 1.       # [MB]
-    est_elapsed_time = 180. # [seconds]
+    est_filesize = 0.5      # [MB]
+    est_elapsed_time = 240. # [seconds]
     print 'Estimated completed filesize: {0} [GB]'.format(est_filesize * N_combinations / 1000.)
     print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
 
@@ -84,11 +91,12 @@ def masterList(N_nodes=7, OVERWRITE=False):
                             start_z = R * np.cos(T)
                     
                             f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
-                            #subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
-                            #                 str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
-                            #time.sleep(0.1)
                         
-def writeJobs(N_jobs=1000, N_paths_per_job=100): 
+def bundle(N_jobs=1000, N_paths_per_job=100): 
+    """Write individual job files for submitting to gpatlas.
+    N_jobs is the maximum number of job files that will be prepared.
+    N_paths_per_job is the number of trajectories calculated per bulk job.
+    """
     global jobs_directory, masterlistpath
 
     with open(masterlistpath) as master_file:
@@ -96,7 +104,7 @@ def writeJobs(N_jobs=1000, N_paths_per_job=100):
     masterlist.reverse()
     
     jobs_submitted = 0    
-    while (jobs_submitted < N_jobs and len(masterlist) > 0):
+    while (jobs_submitted < N_jobs) and (len(masterlist) > 0):
         jobs_submitted += 1
         
         with open( os.path.join(jobs_directory, 'job_{0:06}.txt'.format(jobs_submitted)), 'w' ) as job_file:
@@ -110,3 +118,20 @@ def writeJobs(N_jobs=1000, N_paths_per_job=100):
         for job in masterlist:
             master_file.write(job)
     
+
+def submit(job_cap=None):
+    """Submit jobs to slurm for gpatlas processing.
+    If job_cap=None, all jobs existing will be submitted.
+    Setting job_cap = [integer] will submit the first [integer] number of jobs.
+    """
+    global jobs_directory
+    
+    jobs = os.listdir(jobs_directory)
+    jobs = [j for j in jobs.sort() if j.find('job_') == 0]
+    
+    for i, job in enumerate(jobs):
+        if job_cap is not None:
+            if i > job_cap:
+                break
+        subprocess.call(['sbatch', '../bin/sbatch_interface.sh', os.path.join(jobs_directory, job) ])
+        time.sleep(0.1)

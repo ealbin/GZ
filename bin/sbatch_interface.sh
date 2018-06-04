@@ -2,7 +2,7 @@
 
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=GZ
-#SBATCH -t 0:20:00
+#SBATCH -t 8:00:00
 #SBATCH -o /dev/null
 #SBATCH -p atlas_all
 #SBATCH --mem=1400
@@ -17,4 +17,7 @@
 # 6) save filepath
 
 cd ../python
-python -c "import Solve; Solve.trajectory([$1, $2, $3], $4, $5, savefile=\"$6\")"
+while read job; do
+    param=( $job )
+    python -c "import Solve; Solve.trajectory([${param[0]}, ${param[1]}, ${param[2]}], ${param[3]}, ${param[4]}, savefile=\"${param[5]}\")"
+done

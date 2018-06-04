@@ -14,3 +14,5 @@ Magnetic Lorentz force: Dynamics.py
 Interpolated magnetic field: Bfield.py  
 Interplanetary magnetic model: SolarMagneticModel.py  
 Coordinate system transformations: Transform.py  
+  
+  

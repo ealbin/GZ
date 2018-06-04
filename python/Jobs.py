@@ -12,6 +12,8 @@ data_directory = '/beegfs/DATA/atlas/ealbin/GZ'
 N_nodes = 7
 N_cpus_per_node = 16
 N_cpus = N_nodes * N_cpus_per_node
+N_paths_per_job = 100
+OVERWRITE = False
 print 'N cluster cpus: {0}'.format(N_cpus)
 
 # convienient constants
@@ -35,7 +37,7 @@ Z_uranium  = 92
 #--------------------------------
 Z_list = np.array([Z_neutron, Z_proton, Z_alpha, Z_oxygen, Z_iron, Z_uranium])
 
-energy_list = np.array([2e18, 20e18, 200e18])
+energy_list = np.array([2e18])#, 20e18, 200e18])
 
 radii_list  = np.linspace(0, 6, 61)[1:-1]      # 0.1, 0.2, ..., 5.8, 5.9 [AU]
 theta_list  = np.linspace(0, np.pi, 21)[1:-1]  # 9, 18, 27, ..., 162, 171 [deg] (actually radians)
@@ -54,23 +56,27 @@ print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_
 
 # organize by:
 # GZ/energy/radius/theta_phi_Z.dat
-for E in energy_list:
-    for R in radii_list:
-        dirname  = os.path.join( 'energy_{0}e18'.format(int(E/1e18)), 'radius_{0}'.format(R) )
-        fullpath = os.path.join(data_directory, dirname)
-        if not os.path.isdir(fullpath):
-            os.makedirs(fullpath)
+masterlistpath = os.path.join(data_directory, 'master_list.txt')
+with open(masterlistpath,'w') as f:
+    for E in energy_list:
+        for R in radii_list:
+            dirname  = os.path.join( 'energy_{0}e18'.format(int(E/1e18)), 'radius_{0}'.format(R) )
+            fullpath = os.path.join(data_directory, dirname)
+            if not os.path.isdir(fullpath):
+                os.makedirs(fullpath)
 
-        for T in theta_list:
-            for P in phi_list:
-                for Z in Z_list:
-                    filename = 'theta_{0}_phi_{1}_Z_{2}.dat'.format( int(T*180./np.pi), int(P*180./np.pi), Z )
-                    filepath = os.path.join( fullpath, filename )
-                    start_x = R * np.sin(T) * np.cos(P)
-                    start_y = R * np.sin(T) * np.sin(P)
-                    start_z = R * np.cos(T)
+            for T in theta_list:
+                for P in phi_list:
+                    for Z in Z_list:
+                        filename = 'theta_{0}_phi_{1}_Z_{2}.dat'.format( int(T*180./np.pi), int(P*180./np.pi), Z )
+                        filepath = os.path.join( fullpath, filename )
+                        if os.path.exists(filepath) and (not OVERWRITE):
+                            continue
+                        start_x = R * np.sin(T) * np.cos(P)
+                        start_y = R * np.sin(T) * np.sin(P)
+                        start_z = R * np.cos(T)
                     
-                    subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
-                                     str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
-                    time.sleep(0.1)
-
+                        f.write( '{0} {1} {2} {3} {4} {5} {6}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
+                        #subprocess.call(['sbatch', '../bin/sbatch_interface.sh', 
+                        #                 str(start_x), str(start_y), str(start_z), str(Z), str(E), filepath])
+                        #time.sleep(0.1)

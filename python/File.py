@@ -193,10 +193,10 @@ def distance(file_list, Z1, Z2=0):
     Z2_files = [ file for file in file_list if file.find('Z_{0}'.format(Z2)) > -1 ]
     
     dist_list = []
-    for file1 in Z1files:
+    for file1 in Z1_files:
         match_pos = file1.find('Z_{0}'.format(Z1))
         match_str = file1[:match_pos]
-        for file2 in Z2files:
+        for file2 in Z2_files:
             test_str = file2[:match_pos]
             if test_str == match_str:
                 z1_pos = read(file1)['last_pos']

@@ -7,7 +7,7 @@ through the solar system.
 ```
 $ python  
 >>> import Solve  
->>> Solve.trajectory( [start_pos_x, start_pos_y, start_pos_z], atomic_number, energy_eV, savefile='file.txt' )  
+>>> Solve.trajectory( [start_pos_x_AU, start_pos_y_AU, start_pos_z_AU], atomic_number, energy_eV, savefile='path/file.txt' )  
 ```  
 
 ## ./papers

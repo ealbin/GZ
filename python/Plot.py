@@ -47,16 +47,22 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
     for root, dirs, files in os.walk(data_path):
         for name in files:
             file       = os.path.join(root, name)
-            energy_pos = file.find(energy_str) + len(energy_str)
-            radius_pos = file.find(radius_str) + len(radius_str)
-            theta_pos  = file.find(theta_str)  + len(theta_str)
-            phi_pos    = file.find(phi_str)    + len(phi_str)
-            Z_pos      = file.find(Z_str)      + len(Z_str)
+            energy_pos = file.find(energy_str)
+            radius_pos = file.find(radius_str)
+            theta_pos  = file.find(theta_str)
+            phi_pos    = file.find(phi_str)
+            Z_pos      = file.find(Z_str)
     
             # skip non-data files
             if ( (energy_pos == -1) or (radius_pos == -1) or
                  (theta_pos  == -1) or (phi_pos    == -1) or (Z_pos == -1) ):
                 continue
+            
+            energy_pos += len(energy_str)
+            radius_pos += len(radius_str)
+            theta_pos  += len(theta_str)
+            phi_pos    += len(phi_str)
+            Z_pos      += len(Z_str)
             
             energy = extractNumber( file[energy_pos:] )
             radius = extractNumber( file[radius_pos:] )

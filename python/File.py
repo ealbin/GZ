@@ -1,18 +1,25 @@
 
 import numpy as np
 import os
+import sys
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-def select(data_path, energy_range=None, radius_range=None, theta_range=None, phi_range=None, Z_range=None):
+def select(data_path, energy_range=None, radius_range=None, 
+           theta_range=None, phi_range=None, Z_range=None, special=None):
     """Collect trajectories matching criteria.
     data_path: base directory for trajectory data.
     *_range: if None, select all.  Otherwise select between either [low, high] (inclusive), 
-             or [[val1, val2, ..., valN]] specifically.
-    e.g. select radius=0.1, 1.1, 2.1, theta=45 to 135, and all energy, phi and Z:
-         radius_range=[[0.1, 1.1, 2.1]], theta_range=[45, 135]
+             or [[val1, val2], [val3,val4]] for multiple ranges.
+    e.g. select radius=0.1, theta=45 to 135, and all energy, phi and Z:
+         radius_range=0.1, theta_range=[45, 135]
+    special: automatically filters (over-rules theta/phi ranges if specified) based on
+             'front-cone': theta_range=[60, 120]; phi_range=[ [0, 30], [330, 360] ]
+             'back-cone' : theta_range=[60, 120]; phi_range=[150, 210]
+             'front-lobe': theta_range=[ [0, 60], [120, 180] ]; phi_range=[ [30, 90], [270, 330] ] 
+             'back-lobe' : theta_range=[ [0, 60], [120, 180] ]; phi_range=[ [90, 150], [210, 270] ]
     returns a list of files satisfying the requested criteria.
     """
     def extractNumber(substring):
@@ -31,16 +38,39 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
     def inRange(val, val_range):
         val_range = np.asarray(val_range)
         shape     = val_range.shape
-        if shape[0] == 1:
-            # pick exact values
-            if val in val_range:
+        shape_len = len(shape)
+        if shape_len == 0:
+            # it's a number
+            if val == val_range:
                 return True
-        else:
-            # specified range
+        elif shape_len == 1:
+            # it's a range [low, high]
             if (val_range.min() <= val) and (val <= val_range.max()):
                 return True
+        elif shape_len == 2:
+            # it's multiple ranges [ [low1, high1], ..., [lowN, highN] ]
+            for subrange in val_range:
+                if (subrange.min() <= val) and (val <= subrange.max()):
+                    return True
         return False
-        
+
+    if special is not None:
+        if special == 'front-cone':
+            theta_range = [60, 120]
+            phi_range   = [ [0, 30], [330, 360] ]
+        elif special == 'back-cone':
+            theta_range = [60, 120]
+            phi_range   = [150, 210]
+        elif special == 'front-lobe':
+            theta_range = [ [0, 60], [120, 180] ]
+            phi_range   = [ [30, 90], [270, 330] ]
+        elif special == 'back-lobe':
+            theta_range = [ [0, 60], [120, 180] ]
+            phi_range   = [ [90, 150], [210, 270] ]
+        else:
+            print "special = {'front-cone', 'back-cone', 'front-lobe', or 'back-lobe'}"
+            sys.exit(1)
+    
     energy_str = 'energy_'
     radius_str = 'radius_'
     theta_str  = 'theta_'
@@ -185,10 +215,12 @@ def read(file):
     return file_dict
 
 
-def distance(file_list, Z1, Z2=0):
-    """Find separation distance between two species Z1 and Z2 (neutron by default).
+def separation(file_list, Z1, Z2=0):
+    """Find separation distance [meters] between two species Z1 and Z2 (neutron by default).
     Returns a list of these distances.
     """
+    m_per_AU = 149597870700. # use:  position [AU] * m_per_AU = converted position [m]
+    
     Z1_files = [ file for file in file_list if file.find('Z_{0}'.format(Z1)) > -1 ]
     Z2_files = [ file for file in file_list if file.find('Z_{0}'.format(Z2)) > -1 ]
     
@@ -199,16 +231,29 @@ def distance(file_list, Z1, Z2=0):
         for file2 in Z2_files:
             test_str = file2[:match_pos]
             if test_str == match_str:
-                z1_pos = read(file1)['last_pos']
-                z2_pos = read(file2)['last_pos']
+                z1_dict = read(file1)
+                if (z1_dict['exit_info'] != 'near-earth') or (z1_dict['integration'] != 'success'):
+                    break
+                z1_pos = z1_dict['last_pos']
+                del z1_dict
+                
+                z2_dict = read(file2)
+                if (z2_dict['exit_info'] != 'near-earth') or (z2_dict['integration'] != 'success'):
+                    break
+                z2_pos = z2_dict['last_pos']
+                del z2_dict 
+                
                 diff = z2_pos - z1_pos
-                dist_list.append( np.sqrt( np.dot(diff, diff) ) )
+                dist_list.append( np.sqrt(np.dot(diff, diff)) )
                 break
     
-    return np.asarray(dist_list)
+    return np.asarray(dist_list) * m_per_AU
+    
+    
+    
+    
     
 def plot(file_list, xlim=None, ylim=None, zlim=None):
-    # these are not available on gpatlas
 
     fig_full = plt.figure(figsize=(15,10))
     ax_full  = fig_full.gca(projection='3d')
@@ -257,90 +302,22 @@ def plot(file_list, xlim=None, ylim=None, zlim=None):
     ax_sun.plot_wireframe(x/RsAU, y/RsAU, z/RsAU, color="y")    
     
     for file in filelist:
-        with open(file) as f:
-    
-            # chew first line (header)
-            line = f.readline()
-
-            # system info
-            line = f.readline()
-            system_info = line.split(':')[-1].strip()
-
-            # elapsed time [seconds]
-            line = f.readline()
-            elapsed = float( line.split(':')[-1].strip() )
-
-            # integration algorithm
-            line = f.readline()
-            algorithm = line.split(':')[-1].strip()
-
-            # stepsize [meters]
-            line = f.readline()
-            stepsize = float( line.split(':')[-1].strip() )
-
-            # integration status
-            line = f.readline()
-            int_status = line.split(':')[-1].strip()
-            # check if == 'successful'
-
-            # exit status
-            line = f.readline()
-            exit_status = line.split(':')[-1].strip()
-            # check if == 'near-earth'
-
-            # number of protons (Z)
-            line = f.readline()
-            Z = int( line.split(':')[-1].strip() )
-
-            # energy (E) [electronVolts]
-            line = f.readline()
-            E = float( line.split(':')[-1].strip() )
-
-            # start position [AU]
-            line = f.readline()
-            start_pos = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
-
-            # start beta [unit-less]
-            line = f.readline()
-            start_beta = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
-
-            # x positions [AU]
-            line = f.readline()
-            pos_x = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
-
-            # y positions [AU]
-            line = f.readline()
-            pos_y = np.asarray([ float(y) for y in line.split(':')[-1].strip().strip(',').split(',') ])
-
-            # z positions [AU]
-            line = f.readline()
-            pos_z = np.asarray([ float(z) for z in line.split(':')[-1].strip().strip(',').split(',') ])
-
-            # final position [AU]
-            stop_pos = np.asarray([ pos_x[-1], pos_y[-1], pos_z[-1] ])
-
-            # final beta [unit-less]
-            stop_beta = stop_pos - np.asarray([ pos_x[-2], pos_y[-2], pos_z[-2] ])
-            stop_beta = stop_beta / np.sqrt( np.dot(stop_beta, stop_beta) )    
-    
-            # heading change [degrees]
-            delta_heading = np.arccos(np.dot( start_beta, stop_beta )) * 180. / np.pi
-
-            print 'file: {}'.format(file)
-            print 'elapsed time: {}'.format(elapsed)
-            print 'exit statii: {}, {}'.format(int_status, exit_status)
-            print 'Z, E: {}, {}'.format(Z, E)
-            last_beta = np.array([pos_x[-1], pos_y[-1], pos_z[-1]]) - np.array([pos_x[-2], pos_y[-2], pos_z[-2]])
-            last_beta = last_beta / np.sqrt(np.dot(last_beta, last_beta))
-            print 'Heading change [degrees]: {}'.format( np.arccos(start_beta, last_beta) )
-            last_pos_earth = np.array([pos_x[-1] - 1., pos_y[-1], pos_z[-1]]) 
-            print 'End distance from Earth [Earth Radii]: {}'.format( np.sqrt(np.dot(last_pos_earth, last_pos_earth))/ReAU )
-            print 'End coordinate location [AU]: {}, {}, {}'.format( pos_x[-1], pos_y[-1], pos_z[-1] )
-            print 'End coordinate location from Earth [Earth Radii]: {}'.format(last_pos_earth/ReAU)            
-            print
+        
+        print 'file: {}'.format(file)
+        print 'elapsed time: {}'.format(elapsed)
+        print 'exit statii: {}, {}'.format(int_status, exit_status)
+        print 'Z, E: {}, {}'.format(Z, E)
+        last_beta = np.array([pos_x[-1], pos_y[-1], pos_z[-1]]) - np.array([pos_x[-2], pos_y[-2], pos_z[-2]])
+        last_beta = last_beta / np.sqrt(np.dot(last_beta, last_beta))
+        print 'Heading change [degrees]: {}'.format( np.arccos(start_beta, last_beta) )
+        last_pos_earth = np.array([pos_x[-1] - 1., pos_y[-1], pos_z[-1]]) 
+        print 'End distance from Earth [Earth Radii]: {}'.format( np.sqrt(np.dot(last_pos_earth, last_pos_earth))/ReAU )
+        print 'End coordinate location [AU]: {}, {}, {}'.format( pos_x[-1], pos_y[-1], pos_z[-1] )
+        print 'End coordinate location from Earth [Earth Radii]: {}'.format(last_pos_earth/ReAU)            
+        print
             
-            ax_full.plot(pos_x, pos_y, pos_z)
-            ax_earth.plot((pos_x-1.)/ReAU, pos_y/ReAU, pos_z/ReAU)
-            ax_sun.plot(pos_x/RsAU, pos_y/RsAU, pos_z/RsAU)
+        ax_full.plot(pos_x, pos_y, pos_z)
+        ax_earth.plot((pos_x-1.)/ReAU, pos_y/ReAU, pos_z/ReAU)
+        ax_sun.plot(pos_x/RsAU, pos_y/RsAU, pos_z/RsAU)
 
     plt.show()        

@@ -1,11 +1,13 @@
 # GZ
-GZ effect simulations  
+"Gerasimova-Zatsepin" effect simulator.
+Photo-dissintegration of ultra-high energy cosmic ray nuclei propagation 
+through the solar system.  
 
 ## ./papers
 GZ papers and theses  
 
 ## ./bin
-Job submission interface for gpatlas  
+Job submission interface for gpatlas slurm workload manager    
 
 ## ./python
 Submit jobs to gpatlas: Jobs.py  

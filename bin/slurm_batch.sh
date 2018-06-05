@@ -7,6 +7,9 @@
 #SBATCH -p atlas_all
 #SBATCH --mem=1400
 
+# intended use:
+# $ sbatch slurm_batch.sh job_XXXXXX.txt
+
 cd ../python
 while read job; do
     param=( $job )

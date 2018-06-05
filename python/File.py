@@ -6,6 +6,12 @@ import sys
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+# physical constants / conversions
+m_per_AU = 149597870700. # unit conversion [meters / astronomical unit]
+Rs   = 695508000.        # radius of the Sun [meters]
+RsAU = Rs / m_per_AU     # radius of the Sun [AU]
+Re   = 6378100.          # radius of Earth [meters]
+ReAU = Re / m_per_AU     # radius of Earth [AU]
 
 def select(data_path, energy_range=None, radius_range=None, 
            theta_range=None, phi_range=None, Z_range=None, special=None):
@@ -219,7 +225,7 @@ def separation(file_list, Z1, Z2=0):
     """Find separation distance [meters] between two species Z1 and Z2 (neutron by default).
     Returns a list of these distances.
     """
-    m_per_AU = 149597870700. # use:  position [AU] * m_per_AU = converted position [m]
+    global m_per_AU
     
     Z1_files = [ file for file in file_list if file.find('Z_{0}'.format(Z1)) > -1 ]
     Z2_files = [ file for file in file_list if file.find('Z_{0}'.format(Z2)) > -1 ]
@@ -253,6 +259,8 @@ def separation(file_list, Z1, Z2=0):
 def plot(file_list, ax=None, color=None):
     """
     """
+    global ReAU, RsAU
+    
     if ax is None:
         fig = plt.figure(figsize=(15,10))
         ax  = fig.gca(projection='3d')

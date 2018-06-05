@@ -47,8 +47,8 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
             Z_pos      = file.find(Z_str)
     
             # skip non-data files
-            if ( (energy_pos == -1) or (radii_pos == -1) or
-                 (theta_pos  == -1) or (phi_pos   == -1) or (Z_pos == -1) ):
+            if ( (energy_pos == -1) or (radius_pos == -1) or
+                 (theta_pos  == -1) or (phi_pos    == -1) or (Z_pos == -1) ):
                 continue
             
             energy = extractNumber( file[energy_pos:] )

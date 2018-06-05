@@ -14,6 +14,10 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
     def extractNumber(substring):
         slash_pos = substring.find('/')
         under_pos = substring.find('_')
+        if slash_pos == -1:
+            slash_pos = len(substring)
+        if under_pos == -1:
+            under_pos = len(substring)
         stop_pos  = min([slash_pos, under_pos])
         return float(substring[:stop_pos])
     

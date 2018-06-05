@@ -91,7 +91,8 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
                     continue
             
             file_list.append(file)
-            
+
+    file_list.sort()
     return file_list
 
 
@@ -188,8 +189,23 @@ def distance(file_list, Z1, Z2=0):
     """Find separation distance between two species Z1 and Z2 (neutron by default).
     Returns a list of these distances.
     """
-    pass
+    Z1_files = [ file for file in file_list if file.find('Z_{0}'.format(Z1)) > -1 ]
+    Z2_files = [ file for file in file_list if file.find('Z_{0}'.format(Z2)) > -1 ]
     
+    dist_list = []
+    for file1 in Z1files:
+        match_pos = file1.find('Z_{0}'.format(Z1))
+        match_str = file1[:match_pos]
+        for file2 in Z2files:
+            test_str = file2[:match_pos]
+            if test_str == match_str:
+                z1_pos = read(file1)['last_pos']
+                z2_pos = read(file2)['last_pos']
+                diff = z2_pos - z1_pos
+                dist_list.append( np.sqrt( np.dot(diff, diff) ) )
+                break
+    
+    return np.asarray(dist_list)
     
 def plot(file_list, xlim=None, ylim=None, zlim=None):
     # these are not available on gpatlas

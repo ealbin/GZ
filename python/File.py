@@ -11,10 +11,10 @@ def select(data_path, energy_range=None, radius_range=None,
            theta_range=None, phi_range=None, Z_range=None, special=None):
     """Collect trajectories matching criteria.
     data_path: base directory for trajectory data.
-    *_range: if None, select all.  Otherwise select between either [low, high] (inclusive), 
+    *_range: if None, select all.  Otherwise select scalar number, or [low, high] (inclusive), 
              or [[val1, val2], [val3,val4]] for multiple ranges.
-    e.g. select radius=0.1, theta=45 to 135, and all energy, phi and Z:
-         radius_range=0.1, theta_range=[45, 135]
+    e.g. select radius=0.1, theta=45 to 135, phi=0 to 90 and 270 to 360, and all energy and Z:
+         radius_range=0.1, theta_range=[45, 135], phi_range=[ [0, 90], [270, 360] ]
     special: automatically filters (over-rules theta/phi ranges if specified) based on
              'front-cone': theta_range=[60, 120]; phi_range=[ [0, 30], [330, 360] ]
              'back-cone' : theta_range=[60, 120]; phi_range=[150, 210]
@@ -127,7 +127,7 @@ def select(data_path, energy_range=None, radius_range=None,
 
 
 def read(file):
-    """Reads a data file and returns a dictionary of its values.
+    """Reads a data file and returns a dictionary of its data.
     """
     file_dict = {}
     with open(file) as f:
@@ -250,74 +250,31 @@ def separation(file_list, Z1, Z2=0):
     return np.asarray(dist_list) * m_per_AU
     
     
-    
-    
-    
-def plot(file_list, xlim=None, ylim=None, zlim=None):
+def plot(file_list, ax=None, color=None):
+    """
+    """
+    if ax is None:
+        fig = plt.figure(figsize=(15,10))
+        ax  = fig.gca(projection='3d')
 
-    fig_full = plt.figure(figsize=(15,10))
-    ax_full  = fig_full.gca(projection='3d')
-    ax_full.set_xlim(-6,6)
-    ax_full.set_ylim(-6,6)
-    ax_full.set_zlim(-6,6)
-    ax_full.set_xlabel('x [AU]')
-    ax_full.set_ylabel('y [AU]')
-    ax_full.set_zlabel('z [AU]')
-    ax_full.set_title('Trajectories')
-
-    fig_earth = plt.figure(figsize=(15,10))
-    ax_earth  = fig_earth.gca(projection='3d')
-    ax_earth.set_xlim(-10,10) # factors of Earth Radius
-    ax_earth.set_ylim(-10,10)
-    ax_earth.set_zlim(-10,10)
-    ax_earth.set_xlabel('x [Earth Radii]')
-    ax_earth.set_ylabel('y [Earth Radii]')
-    ax_earth.set_zlabel('z [Earth Radii]')
-    ax_earth.set_title('Near Earth Trajectories')
-
+    if color is None:
+        color = 'k'
+        
     # draw earth
     phi, theta = np.mgrid[0:2*np.pi:200j, 0:np.pi:100j]
     x = ReAU * np.sin(theta) * np.cos(phi) + 1.
     y = ReAU * np.sin(theta) * np.sin(phi)
     z = ReAU * np.cos(theta)
-    ax_full.plot_wireframe(x, y, z, color="b")    
-    ax_earth.plot_wireframe((x-1.)/ReAU, y/ReAU, z/ReAU, color="b")    
+    ax.plot_wireframe(x, y, z, color="b")    
     
-    fig_sun = plt.figure(figsize=(15,10))
-    ax_sun  = fig_sun.gca(projection='3d')
-    ax_sun.set_xlim(-50, 50)  # factors of Sun Radius
-    ax_sun.set_ylim(-50, 50)
-    ax_sun.set_zlim(-50, 50)
-    ax_sun.set_xlabel('x [Sun Radii]')
-    ax_sun.set_ylabel('y [Sun Radii]')
-    ax_sun.set_zlabel('z [Sun Radii]')
-    ax_sun.set_title('Near Sun Trajectories')
-
     # draw sun
     phi, theta = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
     x = RsAU * np.sin(theta) * np.cos(phi)
     y = RsAU * np.sin(theta) * np.sin(phi)
     z = RsAU * np.cos(theta)
-    ax_full.plot_wireframe(x, y, z, color="y")    
-    ax_sun.plot_wireframe(x/RsAU, y/RsAU, z/RsAU, color="y")    
+    ax.plot_wireframe(x, y, z, color="y")    
     
     for file in filelist:
-        
-        print 'file: {}'.format(file)
-        print 'elapsed time: {}'.format(elapsed)
-        print 'exit statii: {}, {}'.format(int_status, exit_status)
-        print 'Z, E: {}, {}'.format(Z, E)
-        last_beta = np.array([pos_x[-1], pos_y[-1], pos_z[-1]]) - np.array([pos_x[-2], pos_y[-2], pos_z[-2]])
-        last_beta = last_beta / np.sqrt(np.dot(last_beta, last_beta))
-        print 'Heading change [degrees]: {}'.format( np.arccos(start_beta, last_beta) )
-        last_pos_earth = np.array([pos_x[-1] - 1., pos_y[-1], pos_z[-1]]) 
-        print 'End distance from Earth [Earth Radii]: {}'.format( np.sqrt(np.dot(last_pos_earth, last_pos_earth))/ReAU )
-        print 'End coordinate location [AU]: {}, {}, {}'.format( pos_x[-1], pos_y[-1], pos_z[-1] )
-        print 'End coordinate location from Earth [Earth Radii]: {}'.format(last_pos_earth/ReAU)            
-        print
-            
-        ax_full.plot(pos_x, pos_y, pos_z)
-        ax_earth.plot((pos_x-1.)/ReAU, pos_y/ReAU, pos_z/ReAU)
-        ax_sun.plot(pos_x/RsAU, pos_y/RsAU, pos_z/RsAU)
+        ax.plot(pos_x, pos_y, pos_z, color=color)
 
-    plt.show()        
+    return ax

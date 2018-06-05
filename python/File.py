@@ -232,13 +232,13 @@ def separation(file_list, Z1, Z2=0):
             test_str = file2[:match_pos]
             if test_str == match_str:
                 z1_dict = read(file1)
-                if (z1_dict['exit_info'] != 'near-earth') or (z1_dict['integration'] != 'success'):
+                if (z1_dict['exit_info'] != 'near-earth') or (z1_dict['integration'] != 'successful'):
                     break
                 z1_pos = z1_dict['last_pos']
                 del z1_dict
                 
                 z2_dict = read(file2)
-                if (z2_dict['exit_info'] != 'near-earth') or (z2_dict['integration'] != 'success'):
+                if (z2_dict['exit_info'] != 'near-earth') or (z2_dict['integration'] != 'successful'):
                     break
                 z2_pos = z2_dict['last_pos']
                 del z2_dict 

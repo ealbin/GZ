@@ -2,10 +2,13 @@
 import numpy as np
 import os
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 def select(data_path, energy_range=None, radius_range=None, theta_range=None, phi_range=None, Z_range=None):
     """Collect trajectories matching criteria.
     data_path: base directory for trajectory data.
-    *_range: if None, select all.  Otherwise select between either [low, high], 
+    *_range: if None, select all.  Otherwise select between either [low, high] (inclusive), 
              or [[val1, val2, ..., valN]] specifically.
     e.g. select radius=0.1, 1.1, 2.1, theta=45 to 135, and all energy, phi and Z:
          radius_range=[[0.1, 1.1, 2.1]], theta_range=[45, 135]
@@ -33,7 +36,7 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
                 return True
         else:
             # specified range
-            if (val_range.min() < val) and (val < val_range.max()):
+            if (val_range.min() <= val) and (val <= val_range.max()):
                 return True
         return False
         
@@ -90,10 +93,106 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
             
     return file_list
 
+
+def read(file):
+    """Reads a data file and returns a dictionary of its values.
+    """
+    file_dict = {}
+    with open(file) as f:
+    
+        # chew first line (header)
+        line = f.readline()
+
+        # system info
+        line = f.readline()
+        system_info = line.split(':')[-1].strip()
+        file_dict['system'] = system_info
+
+        # elapsed time [seconds]
+        line = f.readline()
+        elapsed = float( line.split(':')[-1].strip() )
+        file_dict['time'] = elapsed
+
+        # integration algorithm
+        line = f.readline()
+        algorithm = line.split(':')[-1].strip()
+        file_dict['algorithm'] = algorithm
+
+        # stepsize [meters]
+        line = f.readline()
+        stepsize = float( line.split(':')[-1].strip() )
+        file_dict['stepsize'] = stepsize
+
+        # integration status
+        line = f.readline()
+        int_status = line.split(':')[-1].strip()
+        file_dict['integration'] = int_status
+
+        # exit status
+        line = f.readline()
+        exit_status = line.split(':')[-1].strip()
+        file_dict['exit_info'] = exit_status
+
+        # number of protons (Z)
+        line = f.readline()
+        Z = int( line.split(':')[-1].strip() )
+        file_dict['Z'] = Z
+
+        # energy (E) [electronVolts]
+        line = f.readline()
+        E = float( line.split(':')[-1].strip() )
+        file_dict['E'] = E
+        
+        # start position [AU]
+        line = f.readline()
+        start_pos = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+        file_dict['initial_pos'] = start_pos
+        
+        # start beta [unit-less]
+        line = f.readline()
+        start_beta = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+        file_dict['initial_beta'] = start_beta
+        
+        # x positions [AU]
+        line = f.readline()
+        pos_x = np.asarray([ float(x) for x in line.split(':')[-1].strip().strip(',').split(',') ])
+        file_dict['x'] = pos_x
+        
+        # y positions [AU]
+        line = f.readline()
+        pos_y = np.asarray([ float(y) for y in line.split(':')[-1].strip().strip(',').split(',') ])
+        file_dict['y'] = pos_y
+        
+        # z positions [AU]
+        line = f.readline()
+        pos_z = np.asarray([ float(z) for z in line.split(':')[-1].strip().strip(',').split(',') ])
+        file_dict['z'] = pos_z
+        
+        # final position [AU]
+        stop_pos = np.asarray([ pos_x[-1], pos_y[-1], pos_z[-1] ])
+        file_dict['last_pos'] = stop_pos
+        
+        # final beta [unit-less]
+        stop_beta = stop_pos - np.asarray([ pos_x[-2], pos_y[-2], pos_z[-2] ])
+        stop_beta = stop_beta / np.sqrt( np.dot(stop_beta, stop_beta) )    
+        file_dict['last_beta'] = stop_beta
+    
+        # heading change [degrees]
+        delta_heading = np.arccos(np.dot( start_beta, stop_beta )) * 180. / np.pi
+        file_dict['delta_heading'] = delta_heading
+
+    return file_dict
+
+
+def distance(file_list, Z1, Z2=0):
+    """Find separation distance between two species Z1 and Z2 (neutron by default).
+    Returns a list of these distances.
+    """
+    pass
+    
+    
 def plot(file_list, xlim=None, ylim=None, zlim=None):
     # these are not available on gpatlas
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
 
     fig_full = plt.figure(figsize=(15,10))
     ax_full  = fig_full.gca(projection='3d')

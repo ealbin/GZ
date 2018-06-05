@@ -1,5 +1,5 @@
 # GZ
-"Gerasimova-Zatsepin" effect simulator.
+"Gerasimova-Zatsepin" effect simulator.  
 Photo-dissintegration of ultra-high energy cosmic ray nuclei propagation 
 through the solar system.  
 

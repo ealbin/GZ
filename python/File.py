@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+
 def select(data_path, energy_range=None, radius_range=None, theta_range=None, phi_range=None, Z_range=None):
     """Collect trajectories matching criteria.
     data_path: base directory for trajectory data.
@@ -99,7 +100,6 @@ def read(file):
     """
     file_dict = {}
     with open(file) as f:
-    
         # chew first line (header)
         line = f.readline()
 

@@ -14,11 +14,14 @@ def select(data_path, energy_range=None, radius_range=None, theta_range=None, ph
     def extractNumber(substring):
         slash_pos = substring.find('/')
         under_pos = substring.find('_')
+        dot_pos   = substring.find('.')
         if slash_pos == -1:
             slash_pos = len(substring)
         if under_pos == -1:
             under_pos = len(substring)
-        stop_pos  = min([slash_pos, under_pos])
+        if dot_pos == -1:
+            dot_pos = len(substring)
+        stop_pos  = min([slash_pos, under_pos, dot_pos])
         return float(substring[:stop_pos])
     
     def inRange(val, val_range):

@@ -5,7 +5,7 @@
 #SBATCH -t 8:00:00
 #SBATCH -o /dev/null
 #SBATCH -p atlas_all
-#SBATCH --mem=1400
+#SBATCH --mem=5000
 
 # intended use:
 # $ sbatch slurm_batch.sh job_XXXXXX.txt

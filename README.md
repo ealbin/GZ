@@ -3,24 +3,54 @@
 Photo-dissintegration of ultra-high energy cosmic ray nuclei propagation 
 through the solar system.  
 
-# Basic Use:  
+# Basic use:  
 ```
+$ cd ./python
 $ python  
 >>> import Solve  
 >>> Solve.trajectory( [start_pos_x_AU, start_pos_y_AU, start_pos_z_AU], atomic_number, energy_eV, savefile='path/file.txt' )  
 ```  
 
+# Batch use:  
+1.  Edit Jobs.py "data_directory" as needed.  
+2.  Check out parameters for Jobs.masterlist() and Jobs.bundle() in particular.  
+```
+$ cd ./python
+$ python
+>>> import Jobs
+>>> Jobs.masterlist()
+>>> Jobs.bundle()
+>>> Jobs.submit()
+```
+
+# Process data:
+Check out parameters of File.select() in particular.
+```
+$ cd ./python
+$ python
+>>> import File
+>>> files = File.select(*data_directory*, *optional selection criteria*)
+>>> distances = File.separation(files, Z1, Z2)
+>>> plt, ax = File.plot(files)
+>>> plt.show()
+```
+
+# Contents:  
+
 ## ./papers
-GZ papers and theses  
+GZ papers and theses including the interplanetary magnetic model.  
 
 ## ./bin
-Job submission interface for gpatlas slurm workload manager    
+Slurm job submission interface for gpatlas.    
 
 ## ./python
-Submit jobs to gpatlas: Jobs.py  
-Simulate trajectories: Solve.py  
-Magnetic Lorentz force: Dynamics.py  
-Interpolated magnetic field: Bfield.py  
-Interplanetary magnetic model: SolarMagneticModel.py  
-Coordinate system transformations: Transform.py  
+
+\[use this\] Simulate trajectories: Solve.py  
+\[use this\] Process and plot trajectories: File.py  
+\[use this\] Submit jobs to gpatlas: Jobs.py  
+\[use this\] Interpolated magnetic field: Bfield.py  
+  
+\[utility\] Magnetic Lorentz force: Dynamics.py  
+\[utility\] Interplanetary magnetic model: SolarMagneticModel.py  
+\[utility\] Coordinate system transformations: Transform.py  
   

@@ -31,14 +31,11 @@ def select(data_path, energy_range=None, radius_range=None,
     def extractNumber(substring):
         slash_pos = substring.find('/')
         under_pos = substring.find('_')
-        dot_pos   = substring.find('.')
         if slash_pos == -1:
             slash_pos = len(substring)
         if under_pos == -1:
             under_pos = len(substring)
-        if dot_pos == -1:
-            dot_pos = len(substring)
-        stop_pos  = min([slash_pos, under_pos, dot_pos])
+        stop_pos  = min([slash_pos, under_pos])
         return float(substring[:stop_pos])
     
     def inRange(val, val_range):
@@ -86,7 +83,7 @@ def select(data_path, energy_range=None, radius_range=None,
     file_list = []
     for root, dirs, files in os.walk(data_path):
         for name in files:
-            file       = os.path.join(root, name)
+            file       = os.path.splitext( os.path.join(root, name) )[0]
             energy_pos = file.find(energy_str)
             radius_pos = file.find(radius_str)
             theta_pos  = file.find(theta_str)
@@ -257,7 +254,10 @@ def separation(file_list, Z1, Z2=0):
     
     
 def plot(file_list, ax=None, color=None):
-    """
+    """3D plot trajectories calculated in file_list.
+    Optional, add plots to existing axes object "ax".
+    Optional, plot with color specified (default, black='k').
+    Returns matplotlib.pyplot and axes object.
     """
     global ReAU, RsAU
     
@@ -282,7 +282,9 @@ def plot(file_list, ax=None, color=None):
     z = RsAU * np.cos(theta)
     ax.plot_wireframe(x, y, z, color="y")    
     
-    for file in filelist:
-        ax.plot(pos_x, pos_y, pos_z, color=color)
+    for file in file_list:
+        data = read(file)
+        ax.plot(data['x'], data['y'], data['z'], color=color)
 
-    return ax
+    return plt, ax
+

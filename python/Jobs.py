@@ -11,8 +11,11 @@ import subprocess
 import sys
 import time
 
-# cluster information (gpatlas)
+################################################
+# Edit this:
 data_directory = '/beegfs/DATA/atlas/ealbin/GZ'
+################################################
+
 jobs_directory = os.path.join(data_directory, 'jobs')
 if not os.path.isdir(jobs_directory):
     os.makedirs(jobs_directory)

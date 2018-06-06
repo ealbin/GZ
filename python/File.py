@@ -275,6 +275,9 @@ def plot(file_list, ax=None, color=None):
     if ax is None:
         fig = plt.figure(figsize=(15,10))
         ax  = fig.gca(projection='3d')
+        ax.set_xlabel('X [AU]')
+        ax.set_ylabel('Y [AU]')
+        ax.set_zlabel('Z [AU]')
 
     if color is None:
         color = 'k'

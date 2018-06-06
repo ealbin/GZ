@@ -8,7 +8,7 @@ through the solar system.
 $ cd ./python
 $ python  
 >>> import Solve  
->>> start_pos_AU = [x, y, z]
+>>> start_pos_AU = [x, y, z] # e.g. Sun = [0,0,0] Earth = [1,0,0]
 >>> Solve.trajectory( start_pos_AU, atomic_number, energy_eV, savefile='path/file.txt' )  
 ```  
 

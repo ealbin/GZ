@@ -223,7 +223,7 @@ def near(file_list, near='earth'):
     filter_str = 'near-' + near
     
     filtered_list = []
-    for file in files:
+    for file in file_list:
         if read(file)['exit_info'] == filter_str:
             filtered_list.append(file)
 

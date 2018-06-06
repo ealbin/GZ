@@ -22,6 +22,6 @@ while read job; do
     # 4) energy
     # 5) save filepath
     python -c "import Solve; Solve.trajectory([${param[0]}, ${param[1]}, ${param[2]}], ${param[3]}, ${param[4]}, savefile=\"${param[5]}\")"
-done
+done < "$1"
 
 rm $1

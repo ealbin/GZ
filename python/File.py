@@ -83,7 +83,7 @@ def select(data_path, energy_range=None, radius_range=None,
     file_list = []
     for root, dirs, files in os.walk(data_path):
         for name in files:
-            file       = os.path.splitext( os.path.join(root, name) )[0]
+            file, ext  = os.path.splitext( os.path.join(root, name) )
             energy_pos = file.find(energy_str)
             radius_pos = file.find(radius_str)
             theta_pos  = file.find(theta_str)
@@ -123,7 +123,7 @@ def select(data_path, energy_range=None, radius_range=None,
                 if not inRange(Z, Z_range):
                     continue
             
-            file_list.append(file)
+            file_list.append(file + ext)
 
     file_list.sort()
     return file_list

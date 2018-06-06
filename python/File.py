@@ -217,7 +217,18 @@ def read(file):
 
     return file_dict
 
+def near(file_list, near='earth'):
+    """Filters file_list for data that ends near-earth, or sun if near='sun'.
+    """
+    filter_str = 'near-' + near
+    
+    filtered_list = []
+    for file in files:
+        if read(file)['exit_info'] == filter_str:
+            filtered_list.append(file)
 
+    return filtered_list
+    
 def separation(file_list, Z1, Z2=0):
     """Find separation distance [meters] between two species Z1 and Z2 (neutron by default).
     Returns a list of these distances.

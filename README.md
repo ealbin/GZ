@@ -31,6 +31,7 @@ $ cd ./python
 $ python
 >>> import File
 >>> files = File.select(*data_directory*, *optional selection criteria*)
+>>> files = File.near(files) # filters files for trajectories ending near earth
 >>> distances = File.separation(files, Z1, Z2)
 >>> plt, ax = File.plot(files)
 >>> plt.show()

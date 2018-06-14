@@ -64,7 +64,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     ##################################
 
     #N_combinations = ( Z_list.size * energy_list.size * 
-                       radii_list.size * theta_list.size * phi_list.size )
+    #                   radii_list.size * theta_list.size * phi_list.size )
     #print 'N combinations = {0}'.format(N_combinations)
 
     #est_filesize = 0.5      # [MB]

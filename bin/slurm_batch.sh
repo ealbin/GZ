@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --job-name=GZ
 #SBATCH -t 8:00:00
-#SBATCH -o /dev/null
+#SBATCH -o /beegfs/DATA/atlas/ealbin/GZ/jobs/dump/slurm-%j.out
 #SBATCH -p atlas_all
 #SBATCH --mem=5000
 
@@ -12,6 +12,7 @@
 
 cd ../python
 while read job; do
+    echo $job
     param=( $job )
     # parameters:
     #------------

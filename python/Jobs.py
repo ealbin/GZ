@@ -55,22 +55,22 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     #---------------------------------
     Z_list = np.array([Z_neutron, Z_proton, Z_alpha, Z_oxygen, Z_iron, Z_uranium])
 
-    energy_list = np.array([2e18])#, 20e18, 200e18])
+    energy_list = np.array([2e18, 20e18, 200e18])
 
-    radii_list  = np.linspace(0, 6, 61)[1:-1]      # 0.1, 0.2, ..., 5.8, 5.9 [AU]
-    theta_list  = np.linspace(0, np.pi, 21)[1:-1]  # 9, 18, 27, ..., 162, 171 [deg] (actually radians)
-    phi_list    = np.linspace(0, 2*np.pi, 21)[:-1] # 0, 18, 36, ..., 324, 342 [deg] (actually radians)
+    radii_list  = np.linspace(0, 6, 61)[::5][1:-1]      # 0.5, 1.0, ..., 5.0, 5.5 [AU]
+    theta_list  = np.linspace(0, np.pi, 21)[::4][1:-1]  # 36, 72, 108, 144 [deg] (actually radians)
+    phi_list    = np.linspace(0, 2*np.pi, 21)[::5][:-1] # 0, 90, 180, 270 [deg] (actually radians)
     #---------------------------------
     ##################################
 
-    N_combinations = ( Z_list.size * energy_list.size * 
+    #N_combinations = ( Z_list.size * energy_list.size * 
                        radii_list.size * theta_list.size * phi_list.size )
-    print 'N combinations = {0}'.format(N_combinations)
+    #print 'N combinations = {0}'.format(N_combinations)
 
-    est_filesize = 0.5      # [MB]
-    est_elapsed_time = 240. # [seconds]
-    print 'Estimated completed filesize: {0} [GB]'.format(est_filesize * N_combinations / 1000.)
-    print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
+    #est_filesize = 0.5      # [MB]
+    #est_elapsed_time = 240. # [seconds]
+    #print 'Estimated completed filesize: {0} [GB]'.format(est_filesize * N_combinations / 1000.)
+    #print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
 
     # organize by:
     # GZ/energy/radius/theta_phi_Z.dat
@@ -95,7 +95,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                     
                             f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
                         
-def bundle(N_jobs=1000, N_paths_per_job=100): 
+def bundle(N_jobs=1000, N_paths_per_job=10): 
     """Write individual job files for submitting to gpatlas.
     N_jobs is the maximum number of job files that will be prepared.
     N_paths_per_job is the number of trajectories calculated per bulk job.

@@ -56,6 +56,3 @@ Slurm job submission interface for gpatlas.
 \[utility\] Interplanetary magnetic model: SolarMagneticModel.py  
 \[utility\] Coordinate system transformations: Transform.py  
   
-## ./sim  
-Simulation results  
-

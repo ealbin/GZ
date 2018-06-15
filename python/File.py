@@ -29,7 +29,7 @@ def select(data_path, energy_range=None, radius_range=None,
     returns a list of files satisfying the requested criteria.
     """
     def extractNumber(substring):
-        slash_pos = substring.find('/')
+        slash_pos = substring.find(os.sep)
         under_pos = substring.find('_')
         if slash_pos == -1:
             slash_pos = len(substring)
@@ -217,17 +217,20 @@ def read(file):
 
     return file_dict
 
-def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ'):
+def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ', overwrite=False):
     """Reads files in file_list, and writes minimal information to save space.
     Output directory is given by out_dir.
     Directory information is retained up to strip_dir,
     e.g.  /beegfs/DATA/atlas/ealbin/GZ/energy_200e18/radius_1.0/theta_108_phi_0_Z_1.dat
        --> energy_200e18/radius_1.0/theta_108_phi_0_Z_1.dat
+    overwrite = False skips existing files, = True overwrites them
     """
     for file in file_list:
         data = read(file)
         tail = data['name'][ data['name'].find(strip_dir) + len(strip_dir): ].strip('/')
         outpath = os.path.join( out_dir, tail )
+        if os.path.exists(outpath) and not overwrite:
+            continue
         if not os.path.exists(os.path.dirname(outpath)):
             os.makedirs(os.path.dirname(outpath))
         with open(outpath, 'w') as f:
@@ -249,7 +252,61 @@ def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ'):
             x, y, z = data['last_beta']
             f.write('fin_beta:{} {} {}\n'.format(x, y, z))
             f.write('dbeta[deg]:{}\n'.format(data['delta_heading']))
+
+def readEssentials(file):
+    """Reads a file from writeEssentials() and returns a dictionary of its data.
+    """
+    file_dict = {'name':file}
+    with open(file) as f:
+        line = f.readline()
+        file_dict['from'] = line.split(':')[-1].strip()
+
+        line = f.readline()
+        file_dict['system'] = line.split(':')[-1].strip()
+
+        line = f.readline()
+        file_dict['time'] = float( line.split(':')[-1].strip() )
+
+        line = f.readline()
+        file_dict['algorithm'] = line.split(':')[-1].strip()
+
+        line = f.readline()
+        file_dict['stepsize'] = float( line.split(':')[-1].strip() )
+
+        line = f.readline()
+        file_dict['status'] = line.split(':')[-1].strip()
+
+        line = f.readline()
+        file_dict['exit'] = line.split(':')[-1].strip()
+
+        line = f.readline()
+        file_dict['Z'] = int( line.split(':')[-1].strip() )
+
+        line = f.readline()
+        file_dict['E'] = float( line.split(':')[-1].strip() )
+        
+        line = f.readline()
+        x, y, z = ( line.split(':')[-1].strip() ).split()
+        file_dict['init_pos'] = np.array([ float(x), float(y), float(z) ])
+        
+        line = f.readline()
+        x, y, z = ( line.split(':')[-1].strip() ).split()
+        file_dict['init_beta'] = np.array([ float(x), float(y), float(z) ])
+
+        line = f.readline()
+        x, y, z = ( line.split(':')[-1].strip() ).split()
+        file_dict['fin_pos'] = np.array([ float(x), float(y), float(z) ])
+        
+        line = f.readline()
+        x, y, z = ( line.split(':')[-1].strip() ).split()
+        file_dict['fin_beta'] = np.array([ float(x), float(y), float(z) ])
     
+        line = f.readline()
+        file_dict['dbeta'] = float( line.split(':')[-1].strip() )
+
+    return file_dict            
+            
+            
 def near(file_list, near='earth'):
     """Filters file_list for data that ends near-earth, or sun if near='sun'.
     """

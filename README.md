@@ -57,5 +57,5 @@ Slurm job submission interface for gpatlas.
 \[utility\] Coordinate system transformations: Transform.py  
   
 ## ./sim  
-Compacted/minimal simulation results.  
+Compacted/minimal simulation results and analysis.   
 

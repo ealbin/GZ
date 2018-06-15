@@ -132,7 +132,7 @@ def select(data_path, energy_range=None, radius_range=None,
 def read(file):
     """Reads a data file and returns a dictionary of its data.
     """
-    file_dict = {}
+    file_dict = {'name':file}
     with open(file) as f:
         # chew first line (header)
         line = f.readline()
@@ -217,6 +217,37 @@ def read(file):
 
     return file_dict
 
+def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ'):
+    """Reads files in file_list, and writes minimal information to save space.
+    Output directory is given by out_dir.
+    Directory information is retained up to strip_dir,
+    e.g.  /beegfs/DATA/atlas/ealbin/GZ/energy_200e18/radius_1.0/theta_108_phi_0_Z_1.dat
+       --> energy_200e18/radius_1.0/theta_108_phi_0_Z_1.dat
+    """
+    for file in file_list:
+        data = read(file)
+        tail = data['name'][ data['name'].find(strip_dir) + len(strip_dir): ].strip('/')
+        outpath = os.path.join( out_dir, tail )
+        with open(outpath, 'w') as f:
+            f.write('from:{}\n'.format(data['name']))
+            f.write('system:{}\n'.format(data['system']))
+            f.write('elapsed[sec]:{}\n'.format(data['time']))
+            f.write('algorithm:{}\n'.format(data['algorithm']))
+            f.write('stepsize[m]:{}\n'.format(data['stepsize']))
+            f.write('status:{}\n'.format(data['integration']))
+            f.write('exit:{}\n'.format(data['exit_info']))
+            f.write('protons:{}\n'.format(data['Z']))
+            f.write('energy[eV]:{}\n'.format(data['E']))
+            x, y, z = data['initial_pos']
+            f.write('init_pos[AU]:{} {} {}\n'.format(x, y, z))
+            x, y, z = data['initial_beta']
+            f.write('init_beta:{} {} {}\n'.format(x, y, z))
+            x, y, z = data['last_pos']
+            f.write('fin_pos[AU]:{} {} {}\n'.format(x, y, z))
+            x, y, z = data['last_beta']
+            f.write('fin_beta:{} {} {}\n'.format(x, y, z))
+            f.write('dbeta[deg]:{}\n'.format(data['delta_heading']))
+    
 def near(file_list, near='earth'):
     """Filters file_list for data that ends near-earth, or sun if near='sun'.
     """

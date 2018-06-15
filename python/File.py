@@ -228,7 +228,8 @@ def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ'):
         data = read(file)
         tail = data['name'][ data['name'].find(strip_dir) + len(strip_dir): ].strip('/')
         outpath = os.path.join( out_dir, tail )
-        os.makedirs(os.path.dirname(outpath))
+        if not os.path.exists(os.path.dirname(filename)):
+            os.makedirs(os.path.dirname(outpath))
         with open(outpath, 'w') as f:
             f.write('from:{}\n'.format(data['name']))
             f.write('system:{}\n'.format(data['system']))

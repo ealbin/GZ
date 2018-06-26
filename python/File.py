@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+"""A collection of useful scripts to post-process simulation results.
+"""
 
 import numpy as np
 import os
@@ -5,6 +9,15 @@ import sys
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Development"
 
 # physical constants / conversions
 m_per_AU = 149597870700. # unit conversion [meters / astronomical unit]

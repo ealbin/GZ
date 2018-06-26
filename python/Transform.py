@@ -1,6 +1,18 @@
-"""Transformations between coordinate systems
+#!/usr/bin/env python
+
+"""Transformations between coordinate systems.
 """
+
 import numpy as np
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Production"
 
 def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     """Transform from cartesian x-y-z coordinates to polar rho-theta-z.

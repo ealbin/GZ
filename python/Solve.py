@@ -1,10 +1,25 @@
+#!/usr/bin/env python
+
+"""Compute (solve) trajectories and save to disk.
+"""
+
 import numpy as np
 import platform
-from scipy import integrate
 import sys
 import time
 
+from scipy import integrate
+
 import Dynamics
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Production"
 
 # physical constants / conversions
 m_per_AU = 149597870700. # unit conversion [meters / astronomical unit]

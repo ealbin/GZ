@@ -1,9 +1,21 @@
-import Bfield
+#!/usr/bin/env python
+
+"""The scipy.integrate.ode module interface solves equation systems of the form, y'(t) = f(t,y).
+applyForces plays the role of f(t,y), returning the computation of y'(t).
+"""
+
 import numpy as np
 
-"""scipy.integrate.ode module interface solves equation systems of the form, y'(t) = f(t,y)
-applyForces plays the role of f(t,y), returning the computation of y'(t)
-"""
+import Bfield
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Production"
 
 def applyForces( t, Y, ratio ):
     """Computes the change in direction of relativistic-velocity (beta) for a nuclear fragment

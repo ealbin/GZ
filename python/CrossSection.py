@@ -1,6 +1,18 @@
+#!/usr/bin/env python
+
 """Compute the interaction cross section for photodissintegration
 """
+
 import numpy as np
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Development"
 
 ###########################################################################    
 

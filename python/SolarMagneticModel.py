@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Compute the solar magnetic field as modeled in:
 Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
 (1) Solar Dipole
@@ -6,8 +8,19 @@ Akasofu, S.-I., Gray, P., & Lee, L. 1980, Planetary Space Science, 28, 609
 (4) Ring Current
 Coordinate system: (x,y,z) Sun === (0,0,0), Earth === (1,0,0)
 """
+
 import numpy as np
+
 import Transform
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Development"
 
 ###########################################################################    
 

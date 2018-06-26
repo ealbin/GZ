@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 1) Create masterlist of jobs: Jobs.masterlist()
     (sweep parameters are located here)
@@ -10,6 +12,15 @@ import os
 import subprocess
 import sys
 import time
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Production"
 
 ################################################
 # Edit this:

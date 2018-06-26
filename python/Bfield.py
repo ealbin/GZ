@@ -1,16 +1,30 @@
+#!/usr/bin/env python
+
 """Precompute the total magnetic field, store to disk 
 and use it as an interpolated look-up table to profoundly accelerate
 numeric integration.
 """
-from scipy import interpolate
-from scipy import optimize
+
 import numpy as np
 import os
 import sys
 import tarfile
 import time
+
+from scipy import interpolate
+from scipy import optimize
+
 import SolarMagneticModel
 import Transform
+
+__author__ = "Eric Albin"
+__copyright__ = "Copyright 2018, The CRAYFIS Project"
+__credits__ = ["Eric Albin"]
+__license__ = "GPL"
+__version__ = "1.0"
+__maintainer__ = "Eric Albin"
+__email__ = "Eric.K.Albin@gmail.com"
+__status__ = "Production"
 
 # global field values in memory
 #-------------------------------

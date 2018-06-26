@@ -52,6 +52,7 @@ Slurm job submission interface for gpatlas.
 \[use this\] Submit jobs to gpatlas: Jobs.py  
 \[use this\] Interpolated magnetic field: Bfield.py  
   
+\[utility\] Photo-process cross sections: CrossSection.py
 \[utility\] Magnetic Lorentz force: Dynamics.py  
 \[utility\] Interplanetary magnetic model: SolarMagneticModel.py  
 \[utility\] Coordinate system transformations: Transform.py  

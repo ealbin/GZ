@@ -24,7 +24,7 @@ __license__ = "GPL"
 __version__ = "1.0"
 __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
-__status__ = "Production"
+__status__ = "Development"
 
 # global field values in memory
 #-------------------------------

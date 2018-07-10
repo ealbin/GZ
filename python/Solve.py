@@ -21,6 +21,7 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Production"
 
+
 # physical constants / conversions
 m_per_AU = 149597870700. # unit conversion [meters / astronomical unit]
 Rs   = 695508000.        # radius of the Sun [meters]

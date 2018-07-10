@@ -26,6 +26,7 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Development"
 
+
 # global field values in memory
 #-------------------------------
 __spacelimit = None

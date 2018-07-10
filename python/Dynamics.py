@@ -17,6 +17,7 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Production"
 
+
 def applyForces( t, Y, ratio ):
     """Computes the change in direction of relativistic-velocity (beta) for a nuclear fragment
     under the magnetic influence of the Sun as it propagates through the solar system.

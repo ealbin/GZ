@@ -14,6 +14,7 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Production"
 
+
 def cartesian2polar( xyz, vec=np.array([0,0,0]) ):
     """Transform from cartesian x-y-z coordinates to polar rho-theta-z.
     Optionally also transform a cartesian vector into a polar one.

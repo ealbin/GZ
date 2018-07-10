@@ -14,6 +14,8 @@ import time
 from scipy import interpolate
 from scipy import optimize
 
+import PDFModel
+
 __author__ = "Eric Albin"
 __copyright__ = "Copyright 2018, The CRAYFIS Project"
 __credits__ = ["Eric Albin"]
@@ -21,7 +23,8 @@ __license__ = "GPL"
 __version__ = "1.0"
 __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
-__status__ = "Prototype"
+__status__ = "Development"
+
 
 # global field values in memory
 #-------------------------------
@@ -33,10 +36,13 @@ __z   = None
 __PDF = None
 __InterpolatePDF = None
 
-# TODO: update input to depend on energy and composition, Z and E
-def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p_fname='TODO.pdf'):
+def precompute(mass_number, energy_eV, spacelimit=6, resolution=60, autoload=True, directory='tables'):
     """Returns probability density field x, y, z, PDF meshes by
-    by disk-read or re-generation.  Field density is in [probability / meters].
+    by disk-read or re-generation.  Probility density is in [probability / meters].
+    
+    mass_number: atmoic mass "A" of isotope (number of protons plus neutrons)
+    
+    energy_eV  : energy of isotope [electronVolts]
     
     spacelimit : radial reach (r) of the space volume 
                 (x, y, z) === (-r to r) by (-r to r) by (-r to r) [astronomical units]
@@ -44,7 +50,7 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
     resolution : the number of samples taken between (-r to r) along each dimension.
                  In addition, there are another resolution's-worth of samples added to
                  that set between (-r/10 to r/10) to resolve near the Sun better.
-                 resolution = 60 takes around 5 hours to regenerate.
+                 resolution = 60 takes around (TODO) hours to regenerate.
     
     autoload   : if True, look FIRST to disk for existing table.
                     if (no preexisting) or (has different spacelimit or resolution):
@@ -53,11 +59,8 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
     
     directory  : subdirectory with magnetic field text file
     
-    b_fname    : filename for magnetic field text file
-    
-    returns dictionary { 'x', 'y', 'z', 'BX', 'BY', 'BZ' }
-                 x, y, z have shape (<=2*resolution,)
-                 BX, BY, BZ have shape (<=2*resolution, <=2*resolution, <=2*resolution)
+    returns dictionary { 'x', 'y', 'z', 'PDF' }
+                 x, y, z and PDF have shape (<=2*resolution,)
                  The <=2 is because some points are common to both (-r to r) and 
                  (-r/10 to r/10), thus the shape is between (1 to 2)*resolution.
 
@@ -67,7 +70,7 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
     global __spacelimit, __resolution
     global __x, __y, __z, __PDF
     
-    if ( (__spacelimit == spacelimit) and (__resolution == resolution) and
+    if ( (autoload) and (__spacelimit == spacelimit) and (__resolution == resolution) and
          (__x is not None)  and (__y is not None)  and (__z is not None) and (__PDF is not None) ):
         return {'x':__x, 'y':__y, 'z':__z, 'PDF':__PDF}    
 
@@ -101,9 +104,9 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
         regen = True
 
     text_sep = ', '
-    base_dir  = os.path.dirname( os.path.abspath( CrossSection.__file__ ) ) # TODO: __file___
+    base_dir  = os.path.dirname( os.path.abspath( __file__ ) ) 
     directory = 'tables'
-    p_fname   = 'cartesianBfield.pdf' # TODO: name
+    p_fname   = 'A_{0}_E_{1}.pdf'.format(mass_number, energy_eV)
     p_fnameZip= p_fname + '.tar.gz' 
     p_path    = os.path.abspath( os.path.join( base_dir, directory, p_fname ) )
     p_exists  = os.path.isfile(p_path)
@@ -115,7 +118,7 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
                 return precompute(spacelimit=spacelimit, resolution=resolution, autoload=autoload, directory=directory, p_fname=p_fname)
         else:
             regen = True
-    
+
     # load from file if the file is good
     if (not regen):
         with open(p_path) as p_f:
@@ -139,11 +142,8 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
         target = 0.
         start  = time.time()
         for i, (ix, iy, iz) in enumerate( zip( X.flatten(), Y.flatten(), Z.flatten() ) ):
-            # TODO:
-            b_solar = SolarMagneticModel.sumBfieldTesla( np.array([ ix, iy, iz ]) )
-            bx[i] = b_solar[0] # [Tesla]
-            by[i] = b_solar[1] # [Tesla]
-            bz[i] = b_solar[2] # [Tesla]
+            pdf[i] = PDFModel.pdf( ix, iy, iz, mass_number, energy_eV ) # [probability / meter]
+
             # progress report for long regenerations
             if ( i / float(i_max) ) >= ( target / 100. ):
                 print '\r                                                           \r',
@@ -194,15 +194,15 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', p
     return {'x':__x, 'y':__y, 'z':__z, 'PDF':__PDF}    
 
 
-#TODO:
-def cartesianTesla( cartesian_pos, close2sun=0.01 ):
-    """Returns cartesian [Tesla] values (Bx, By, Bz) for cartesian_pos = (x, y, z).
-    If position is within close2sun radius [AU], do not interpolate, return exact (slow).
+def cartesianPDF( cartesian_pos, mass_number, energy_eV, close2sun=0.01 ):
+    """Returns cartesian [probability / meter] value (PDF) for cartesian_pos = (x, y, z).
+    If position is within close2sun radius [AU], do not interpolate, return exact (slower).
     For spacelimit==6 and resolution==60, interpolation is acceptable up to close2sun==0.01.
     """
     cartesian_pos = np.array(cartesian_pos)
     if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
-        return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
+        x, y, z = cartesian_pos
+        return PDFModel.pdf(x, y, z, mass_number, energy_eV)
     
     global __InterpolatePDF
     if (__InterpolatePDF is not None):
@@ -217,4 +217,4 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
         
         __InterpolatePDF = interpolate.RegularGridInterpolator((x,y,z), PDF, bounds_error=False, fill_value=0) # [Probability / meter]
         
-        return cartesianTesla(cartesian_pos)
+        return cartesianPDF(cartesian_pos, mass_number, energy_eV)

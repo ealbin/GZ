@@ -22,6 +22,7 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Development"
 
+
 ###########################################################################    
 
 ### magnetic units:  1 Telsa = 1e4 Gauss
@@ -37,7 +38,6 @@ Rd = 0.1*Ro  # Sunspot dipole radius [astronomical units]
 po = 1.      # [astronomical units]
 
 ###########################################################################    
-
 
 def solarDipole(cartesian_pos):
     """Compute the solar dipole component of the field model given 

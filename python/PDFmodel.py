@@ -70,8 +70,11 @@ def pdf(cartesian_pos, mass_number, energy_eV):
     
     sun_dist  = np.sqrt( np.dot( cartesian_pos, cartesian_pos ) )
     
-    pdf_cm, err = integrate.quad( integrand, 0, np.inf, 
+    # analytical limits of integration are 0 to infinity [electronVolts], however the solar blackbody
+    # spectrum is negligible by 10 [eV].  An upper limit of 100 [eV] is performed, as choices of a higher limit
+    # will result in an undersampled integrand between 0 and 1 [eV] (the most important part). 
+    pdf_cm, err = integrate.quad( integrand, 0, 100, 
                                   args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
                                   # [probability / centimeter]
-       
+        
     return pdf_cm * 100. # [probility / meter]

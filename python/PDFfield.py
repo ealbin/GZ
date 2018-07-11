@@ -142,7 +142,7 @@ def precompute(mass_number, energy_eV, spacelimit=6, resolution=60, autoload=Tru
         target = 0.
         start  = time.time()
         for i, (ix, iy, iz) in enumerate( zip( X.flatten(), Y.flatten(), Z.flatten() ) ):
-            pdf[i] = PDFModel.pdf( ix, iy, iz, mass_number, energy_eV ) # [probability / meter]
+            pdf[i] = PDFmodel.pdf( np.asarray([ix, iy, iz]), mass_number, energy_eV ) # [probability / meter]
 
             # progress report for long regenerations
             if ( i / float(i_max) ) >= ( target / 100. ):

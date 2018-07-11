@@ -14,7 +14,7 @@ import time
 from scipy import interpolate
 from scipy import optimize
 
-import PDFModel
+import PDFmodel
 
 __author__ = "Eric Albin"
 __copyright__ = "Copyright 2018, The CRAYFIS Project"
@@ -201,15 +201,14 @@ def cartesianPDF( cartesian_pos, mass_number, energy_eV, close2sun=0.01 ):
     """
     cartesian_pos = np.array(cartesian_pos)
     if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
-        x, y, z = cartesian_pos
-        return PDFModel.pdf(x, y, z, mass_number, energy_eV)
+        return PDFmodel.pdf(cartesian_pos, mass_number, energy_eV)
     
     global __InterpolatePDF
     if (__InterpolatePDF is not None):
         PDF = __InterpolatePDF(cartesian_pos)
         return PDF
     else:
-        meshes = precompute()
+        meshes = precompute(mass_number, energy_eV)
         x   = meshes['x']
         y   = meshes['y']
         z   = meshes['z']

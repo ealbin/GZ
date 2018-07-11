@@ -20,7 +20,7 @@ __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Development"
 
 
-def approximateAngle(x, y, z):
+def approximateAngle(cartesian_pos):
     """Given cartesian coordinates (x, y, z) in [AU], returns the angle [radians] between
     a photon from the Sun and the Earth-bound trajectory.  This is an approximation
     as the actual angle depends on the actual trajectory which may not be directly
@@ -31,10 +31,10 @@ def approximateAngle(x, y, z):
     cart_sun   = np.asarray([0, 0, 0]) # [AU]
     cart_earth = np.asarray([1, 0, 0]) # [AU]
     
-    cart_ray   = np.asarray([x, y, z]) - cart_sun
+    cart_ray   = cartesian_pos - cart_sun
     unit_ray   = cart_ray / np.sqrt(np.dot( cart_ray, cart_ray ))
     
-    cart_traj  = cart_earth - np.asarray([x, y, z])
+    cart_traj  = cart_earth - cartesian_pos
     unit_traj  = cart_traj / np.sqrt(np.dot( cart_traj, cart_traj ))
 
     return np.arccos( np.dot( -unit_ray, unit_traj ) )
@@ -48,7 +48,7 @@ def solarPhotonDensity( rs_AU, Es_eV ):
     """
     return 7.8e7 * (1./rs_AU**2) * ( Es_eV**2 / ( np.exp(Es_eV/.5) - 1. ) )
 
-def pdf(x, y, z, mass_number, energy_eV):
+def pdf(cartesian_pos, mass_number, energy_eV):
     """Returns the probility density [probability / meter] for single nucleon ejection 
     at cartesian location (x, y, z) [AU] from parent nucleide (mass_number) 
     traveling with energy (energy_eV).
@@ -57,11 +57,10 @@ def pdf(x, y, z, mass_number, energy_eV):
     mass_eV = mass_number * amu2mev * 1e6 # [eV / c**2]
     lorentz_gamma = energy_eV / mass_eV
 
-    alpha_rad = approximateAngle(x, y, z)
+    alpha_rad = approximateAngle(cartesian_pos)
     geometry  = 2. * np.cos(alpha_rad / 2.)**2
     
-    cart_pos  = np.asarray([x, y, z])
-    sun_dist  = np.sqrt( np.dot( cart_pos, cart_pos ) )
+    sun_dist  = np.sqrt( np.dot( cartesian_pos, cartesian_pos ) )
     
     pdf_cm, err = integrate.quad(lambda solar_e: solarPhotonDensity(sun_dist, solar_e) 
                                  * CrossSection.singleNucleon(mass_number, lorentz_gamma * geometry * solar_e)

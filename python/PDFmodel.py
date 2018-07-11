@@ -48,6 +48,14 @@ def solarPhotonDensity( rs_AU, Es_eV ):
     """
     return 7.8e7 * (1./rs_AU**2) * ( Es_eV**2 / ( np.exp(Es_eV/.5) - 1. ) )
 
+def integrand(solar_e, lorentz_gamma, mass_number, sun_dist, geometry):
+    """Returns the integrand of the energy integral for computing the pdf.
+    See "pdf()" below.
+    """    
+    return ( solarPhotonDensity(sun_dist, solar_e) 
+             * CrossSection.singleNucleon(mass_number, lorentz_gamma * geometry * solar_e)
+             * geometry ) # [probability / centimeter * electronVolt]
+
 def pdf(cartesian_pos, mass_number, energy_eV):
     """Returns the probility density [probability / meter] for single nucleon ejection 
     at cartesian location (x, y, z) [AU] from parent nucleide (mass_number) 
@@ -62,8 +70,8 @@ def pdf(cartesian_pos, mass_number, energy_eV):
     
     sun_dist  = np.sqrt( np.dot( cartesian_pos, cartesian_pos ) )
     
-    pdf_cm, err = integrate.quad(lambda solar_e: solarPhotonDensity(sun_dist, solar_e) 
-                                 * CrossSection.singleNucleon(mass_number, lorentz_gamma * geometry * solar_e)
-                                 * geometry, 0, np.inf ) # [probability / centimeter]
-    
+    pdf_cm, err = integrate.quad( integrand, 0, np.inf, 
+                                  args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
+                                  # [probability / centimeter]
+       
     return pdf_cm * 100. # [probility / meter]

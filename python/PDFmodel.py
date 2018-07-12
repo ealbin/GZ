@@ -70,11 +70,21 @@ def pdf(cartesian_pos, mass_number, energy_eV):
     
     sun_dist  = np.sqrt( np.dot( cartesian_pos, cartesian_pos ) )
     
-    # analytical limits of integration are 0 to infinity [electronVolts], however the solar blackbody
-    # spectrum is negligible by 10 [eV].  An upper limit of 100 [eV] is performed, as choices of a higher limit
-    # will result in an undersampled integrand between 0 and 1 [eV] (the most important part). 
-    pdf_cm, err = integrate.quad( integrand, 0, 100, 
-                                  args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
-                                  # [probability / centimeter]
-        
+    # Analytical limits of integration are 0 to infinity [electronVolts], however the solar blackbody
+    # spectrum is negligible by 10 [eV].  An upper limit of 100 [eV] is performed.
+    # Using an algorithm such as quad produces very similar (within ~20%) results to a sampled algorithm 
+    # like simps, however I believe a well sampled simps result is closer to the true value as quad (et al)
+    # tends to undersample the integrand between 0 and 1 [eV] (aka the most important part). 
+    e_samples = np.logspace(-6, 2, 100000) # good 6 digit precision at 10000 samples (fyi)
+    p_samples = np.zeros(e_samples.size)
+    for i, e in enumerate(e_samples):
+        p_samples[i] = integrand(e, lorentz_gamma, mass_number, sun_dist, geometry) 
+        # [probability / centimeter * electronVolt]
+    pdf_cm = integrate.simps( p_samples, x=e_samples ) # [proability / centimeter]
+    
+    # using quad (upper limit capped at 100 eV instead of infinity to avoid undersampling):
+    #pdf_cm, err = integrate.quad( integrand, 0, 100, 
+    #                              args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
+    #                              # [probability / centimeter]
+    
     return pdf_cm * 100. # [probility / meter]

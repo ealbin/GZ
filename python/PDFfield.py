@@ -87,6 +87,10 @@ def precompute(mass_number, energy_eV, spacelimit=6, resolution=60, autoload=Tru
     x = np.union1d(x, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
     y = np.union1d(y, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
     z = np.union1d(z, np.linspace(-spacelimit/10., spacelimit/10., resolution) )
+    ## add extra points in the sun-earth corridor:
+    x = np.union1d(x, np.linspace(    0,    1, resolution) )
+    y = np.union1d(y, np.linspace(-0.15, 0.15, resolution) )
+    z = np.union1d(z, np.linspace(-0.15, 0.15, resolution) )
     
     spacelimit = np.array([spacelimit])
     resolution = np.array([resolution])

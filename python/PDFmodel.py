@@ -5,6 +5,7 @@ Coordinate system: (x,y,z) Sun === (0,0,0), Earth === (1,0,0)
 """
 
 import numpy as np
+import sys
 
 from scipy import integrate
 
@@ -56,10 +57,12 @@ def integrand(solar_e, lorentz_gamma, mass_number, sun_dist, geometry):
              * CrossSection.singleNucleon(mass_number, lorentz_gamma * geometry * solar_e)
              * geometry ) # [probability / centimeter * electronVolt]
 
-def pdf(cartesian_pos, mass_number, energy_eV):
+def pdf(cartesian_pos, mass_number, energy_eV, algorithm='simps'):
     """Returns the probility density [probability / meter] for single nucleon ejection 
     at cartesian location (x, y, z) [AU] from parent nucleide (mass_number) 
     traveling with energy (energy_eV).
+    See comments below regarding 'algorithm'.  In short, 'simps' is very slow but accurate,
+    'quad' is very fast but less accurate.
     """
     amu2mev = 931.5 # [MeV/c**2] e.g. carbon has an atomic mass of 12, or 12 * amu2mev = 11,178 MeV/c**2
     mass_eV = mass_number * amu2mev * 1e6 # [eV / c**2]
@@ -74,17 +77,23 @@ def pdf(cartesian_pos, mass_number, energy_eV):
     # spectrum is negligible by 10 [eV].  An upper limit of 100 [eV] is performed.
     # Using an algorithm such as quad produces very similar (within ~20%) results to a sampled algorithm 
     # like simps, however I believe a well sampled simps result is closer to the true value as quad (et al)
-    # tends to undersample the integrand between 0 and 1 [eV] (aka the most important part). 
-    e_samples = np.logspace(-6, 2, 100000) # good 6 digit precision at 10000 samples (fyi)
-    p_samples = np.zeros(e_samples.size)
-    for i, e in enumerate(e_samples):
-        p_samples[i] = integrand(e, lorentz_gamma, mass_number, sun_dist, geometry) 
-        # [probability / centimeter * electronVolt]
-    pdf_cm = integrate.simps( p_samples, x=e_samples ) # [proability / centimeter]
-    
-    # using quad (upper limit capped at 100 eV instead of infinity to avoid undersampling):
-    #pdf_cm, err = integrate.quad( integrand, 0, 100, 
-    #                              args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
-    #                              # [probability / centimeter]
-    
+    # tends to undersample the integrand between 0 and 1 [eV] (aka the most important part).
+    # The downside is it is a few orders of magnitude slower than quad.
+    if algorithm == 'simps':
+        e_samples = np.logspace(-4, 2, 1000) # good 5 digit precision at 1000 samples
+        p_samples = np.zeros(e_samples.size)
+        for i, e in enumerate(e_samples):
+            p_samples[i] = integrand(e, lorentz_gamma, mass_number, sun_dist, geometry) 
+            # [probability / centimeter * electronVolt]
+        pdf_cm = integrate.simps( p_samples, x=e_samples ) # [proability / centimeter]
+        
+    elif algorithm == 'quad':
+        # upper limit capped at 100 eV instead of infinity to avoid undersampling:
+        pdf_cm, err = integrate.quad( integrand, 0, 100, 
+                                      args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
+                                      # [probability / centimeter]
+    else:
+        print 'wrong algorithm: choose "simps" or "quad"'
+        sys.exit(1)
+        
     return pdf_cm * 100. # [probility / meter]

@@ -18,7 +18,7 @@ __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Production"
 
 
-def applyForces( t, Y, ratio ):
+def applyForces( t, Y, ratio, test_field=None ):
     """Computes the change in direction of relativistic-velocity (beta) for a nuclear fragment
     under the magnetic influence of the Sun as it propagates through the solar system.
     t in this context is not time.  It is the linear path displacement, s [meters], or rather l [AU]. 
@@ -27,6 +27,8 @@ def applyForces( t, Y, ratio ):
     (i.e. intended for energy range [2..200]e18 eV, simplifying numerical assumption/requirement 
     np.dot(beta, beta) = 1. at all times).
     returns dY/dt === (beta_x, beta_y, beta_z, alpha_x, alpha_y, alpha_z) === (rel. velocity=unit-less, dv/dl=1/AU=alpha)
+    If optional parameter "test_field" is None, the solar field will be used, otherwise it will use the supplied field,
+    e.g. test_field=np.asarray([0,0,10]) [Tesla].
     """
     m_per_AU = 149597870700. # use:  position [AU] * m_per_AU = converted position [m]
     c = 299792458. # [meters / second] === speed of light    
@@ -41,14 +43,17 @@ def applyForces( t, Y, ratio ):
     beta = beta / np.sqrt( np.dot(beta, beta) )
     beta_x, beta_y, beta_z = beta[0], beta[1], beta[2]
 
-    def solarLorentzForce( __ratio, __pos, __beta ):
+    def solarLorentzForce( __ratio, __pos, __beta, __test_field=None ):
         """Computes (and returns) d/dl(beta) === (1/AU) from solar magnetic field influence.
         Derivation in the Appendix below.
         """
-        B = Bfield.cartesianTesla(__pos) # [Tesla] 
+        if __test_field is not None:
+            B = __test_field # test field [Tesla]
+        else:
+            B = Bfield.cartesianTesla(__pos) # [Tesla] 
         return m_per_AU * __ratio * np.cross( __beta, c*B ) # [(meters/AU) * (1/Volts) * (meters/second) * Tesla] == [1/AU]
 
-    alpha_x, alpha_y, alpha_z = solarLorentzForce(ratio, pos, beta) # [1/AU]   
+    alpha_x, alpha_y, alpha_z = solarLorentzForce(ratio, pos, beta, __test_field=test_field) # [1/AU]   
     alpha = np.array([ alpha_x, alpha_y, alpha_z ])
     
     return np.concatenate(( beta, alpha ))

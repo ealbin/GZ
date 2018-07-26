@@ -65,47 +65,62 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     ##################################
     #       Sweep parameters
     #---------------------------------
-    Z_list = np.array([Z_neutron, Z_proton, Z_alpha, Z_oxygen, Z_iron, Z_uranium])
+    thetax_list = np.array([5., 30., 60., 90., 120., 150., 175.]) * np.pi / 180. # [radians]
 
-    energy_list = np.array([2e18, 20e18, 200e18])
-
-    radii_list  = np.linspace(0, 6, 61)[::5][1:-1]      # 0.5, 1.0, ..., 5.0, 5.5 [AU]
-    theta_list  = np.linspace(0, np.pi, 21)[::4][1:-1]  # 36, 72, 108, 144 [deg] (actually radians)
-    phi_list    = np.linspace(0, 2*np.pi, 21)[::5][:-1] # 0, 90, 180, 270 [deg] (actually radians)
+    Z_list = np.array([Z_helium, Z_oxygen, Z_iron, Z_uranium])
+    A_list = np.array([      4.,      16.,    56.,      238.])
+    
+    energy_list = np.array([2e18, 200e18]) # [eV]
+    phix_list   = np.array([0., 120., 240.]) * np.pi / 180. # [radians]
+    radii_list  = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0]) # [AU]
+    
     #---------------------------------
     ##################################
 
-    #N_combinations = ( Z_list.size * energy_list.size * 
-    #                   radii_list.size * theta_list.size * phi_list.size )
-    #print 'N combinations = {0}'.format(N_combinations)
-
-    #est_filesize = 0.5      # [MB]
-    #est_elapsed_time = 240. # [seconds]
-    #print 'Estimated completed filesize: {0} [GB]'.format(est_filesize * N_combinations / 1000.)
-    #print 'Estimated time to completion: {0} [hrs]'.format(N_combinations / float(N_cpus) * est_elapsed_time / 3600.)
+    N_combinations = ( Z_list.size * energy_list.size * 
+                       radii_list.size * thetax_list.size * phix_list.size )
+    print 'N combinations = {0}'.format(N_combinations)
 
     # organize by:
-    # GZ/energy/radius/theta_phi_Z.dat
+    # GZ/thetax/Z_energy_phix_radius.dat  nuclide with A-1 (take half proton, half neutron, aka Z - 0.5 and A - 1)
+    # GZ/thetax/Z_energy_phix_radius.pdat proton
+    jobcount = 0
     with open(masterlistpath,'w') as f:
-        for E in energy_list:
-            for R in radii_list:
-                dirname  = os.path.join( 'energy_{0}e18'.format(int(E/1e18)), 'radius_{0}'.format(R) )
-                fullpath = os.path.join(data_directory, dirname)
-                if not os.path.isdir(fullpath):
-                    os.makedirs(fullpath)
+        for Tx in thetax_list:
+            dirname  = 'thetax_{0}'.format(Tx*180./np.pi)
+            fullpath = os.path.join(data_directory, dirname)        
+            if not os.path.isdir(fullpath):
+                os.makedirs(fullpath)
 
-                for T in theta_list:
-                    for P in phi_list:
-                        for Z in Z_list:
-                            filename = 'theta_{0}_phi_{1}_Z_{2}.dat'.format( int(T*180./np.pi), int(P*180./np.pi), Z )
+            for Z, A in zip(Z_list, A_list):
+                for E in energy_list:
+                    for Px in phix_list:
+                        for R in radii_list:
+                            skip  = False
+                            skipp = False
+                            
+                            filename = 'Z{0:02}_E{1:02}e18_PHIX_{2:03.0f}_R{3:2.1f}.dat'.format( Z, E/2e18, Px*180./np.pi, R )
                             filepath = os.path.join( fullpath, filename )
                             if os.path.exists(filepath) and (not OVERWRITE):
-                                continue
-                            start_x = R * np.sin(T) * np.cos(P)
-                            start_y = R * np.sin(T) * np.sin(P)
-                            start_z = R * np.cos(T)
+                                skip = True
+
+                            pfilename = 'Z{0:02}_E{1:02}e18_PHIX_{2:03.0f}_R{3:2.1f}.pdat'.format( Z, E/2e18, Px*180./np.pi, R )
+                            pfilepath = os.path.join( fullpath, pfilename )
+                            if os.path.exists(pfilepath) and (not OVERWRITE):
+                                skip = True
+
+                            start_x = R * np.cos(Tx)
+                            start_y = R * np.sin(Tx) * np.sin(Px)
+                            start_z = R * np.sin(Tx) * np.cos(Px)
                     
-                            f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z, Z, E, filepath) )
+                            # !!!! SIMULATE Z - .5 for DECAY, aka ave between loss of proton vs neutron !!!!
+                            if not skip:
+                                f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z, Z -.5, E*(A-1.)/A,  filepath) )
+                                jobcount += 1
+                            if not skipp:
+                                f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z,     1,        E/A, pfilepath) )
+                                jobcount += 1
+    print 'prepared {0} jobs'.format(jobcount)
                         
 def bundle(N_jobs=1000, N_paths_per_job=10): 
     """Write individual job files for submitting to gpatlas.

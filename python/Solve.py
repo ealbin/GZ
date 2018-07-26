@@ -31,7 +31,7 @@ ReAU = Re / m_per_AU     # radius of Earth [AU]
 c    = 299792458.        # speed of light [meters / second]
 
 def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None, 
-                algorithm='vode', stepsize=100000):
+                algorithm='vode', stepsize=100000., test_field=None):
     """Calculates the trajectory of nuclei Z with energy E as it travels 
     throught the solar system. Assumes ultra-relativistic nuclei, aka
     |beta| > 0.999990 ~= 1. 
@@ -43,6 +43,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         algorithm === default "vode" (best performance), "lsoda" (almsot equal performance),
                       "dop853" (worst performance, explicit runge-kutta).
         stepsize === integration stepsize [meters] (default 100 km)
+        test_field === None (use solar field), or e.g. np.array([0,0,10]) to use a custom test field.
     """
     start_time = time.time()
     initial_pos = np.array(start_pos)
@@ -74,10 +75,10 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         success_code = 1
     else:
         print "invalid algorithm, please input 'vode', 'lsoda' or 'dop853'"
-        sys.exit(0)
-
+        sys.exit(1)
+    
     initial_l = 0. # path begins at 0 distance [AU]
-    integrator.set_initial_value(initial_conditions, initial_l).set_f_params(dynamic_ratio)
+    integrator.set_initial_value(initial_conditions, initial_l).set_f_params(dynamic_ratio, test_field)
     dl = stepsize / m_per_AU  # numerical stepsize, dl distance (in AU)
     positions = [] # container for positions computed along the path
     
@@ -97,6 +98,18 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         sun_diff = position - sun_pos
         Rsun     = np.sqrt( np.dot(sun_diff, sun_diff) )
         if Rsun < sunlimit:
+            return True
+        return False
+        
+    def isEarthPlane(position, heading, anglelimit=1., earth_pos=np.array([1,0,0])):
+        """Checks if computed path is crossing the Earth plane (aka closest Earth approach).
+        returns True if it is, False if not.
+        """
+        earth_diff = position - earth_pos
+        earth_diff = earth_diff / np.sqrt( np.dot(earth_diff, earth_diff) )
+        heading = heading / np.sqrt( np.dot(heading, heading) )
+        angle = np.arccos(np.dot(earth_diff, heading)) * 180. / np.pi
+        if np.abs(angle - 90.) < anglelimit:
             return True
         return False
         
@@ -120,10 +133,25 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         if isNearSun(positions[-1]):
             exit_status = 'near-sun'
             break
-        if isNearEarth(positions[-1]):
-            exit_status = 'near-earth'
-            break
-    
+        if len(positions) > 2:    
+            heading = np.asarray(positions[-1]) - np.asarray(positions[-2])
+            if isEarthPlane(positions[-1], heading):
+                exit_status = 'earth-plane'
+                break
+        #if isNearEarth(positions[-1]):
+        #    exit_status = 'near-earth'
+        #    break
+        
+        if test_field is not None:
+            heading     = positions[-1] - positions[-2]
+            start2final = positions[-1] - positions[0]
+            heading     = heading     / np.sqrt( np.dot(heading, heading) )
+            start2final = start2final / np.sqrt( np.dot(start2final, start2final) ) 
+            angle = np.arccos( np.dot(start2final, heading) ) * 180. / np.pi
+            if angle > 160.:
+                exit_status = 'closed-loop'
+                break
+            
     # thin out data
     sizecap  = 500
     skipsize = 1000

@@ -87,7 +87,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     jobcount = 0
     with open(masterlistpath,'w') as f:
         for Tx in thetax_list:
-            dirname  = 'thetax_{0}'.format(Tx*180./np.pi)
+            dirname  = 'thetax_{0:03.0f}'.format(Tx*180./np.pi)
             fullpath = os.path.join(data_directory, dirname)        
             if not os.path.isdir(fullpath):
                 os.makedirs(fullpath)

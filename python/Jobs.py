@@ -99,12 +99,12 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                             skip  = False
                             skipp = False
                             
-                            filename = 'Z{0:02}_E{1:02.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.dat'.format( Z, E/1e18, Px*180./np.pi, R )
+                            filename = 'Z{0:02}_E{1:03.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.dat'.format( Z, E/1e18, Px*180./np.pi, R )
                             filepath = os.path.join( fullpath, filename )
                             if os.path.exists(filepath) and (not OVERWRITE):
                                 skip = True
 
-                            pfilename = 'Z{0:02}_E{1:02.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.pdat'.format( Z, E/1e18, Px*180./np.pi, R )
+                            pfilename = 'Z{0:02}_E{1:03.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.pdat'.format( Z, E/1e18, Px*180./np.pi, R )
                             pfilepath = os.path.join( fullpath, pfilename )
                             if os.path.exists(pfilepath) and (not OVERWRITE):
                                 skip = True

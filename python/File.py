@@ -181,6 +181,11 @@ def read(file):
         exit_status = line.split(':')[-1].strip()
         file_dict['exit_info'] = exit_status
 
+        # distance from earth
+        line = f.readline()
+        earth_dist = float( line.split(':')[-1].strip() )
+        file_dict['earth_dist'] = earth_dist
+        
         # number of protons (Z)
         line = f.readline()
         Z = int( line.split(':')[-1].strip() )
@@ -255,6 +260,7 @@ def writeEssentials(file_list, out_dir='../sim', strip_dir='GZ', overwrite=False
             f.write('stepsize[m]:{}\n'.format(data['stepsize']))
             f.write('status:{}\n'.format(data['integration']))
             f.write('exit:{}\n'.format(data['exit_info']))
+            f.write('earthdist:{}\n'.format(data['earth_dist']))
             f.write('protons:{}\n'.format(data['Z']))
             f.write('energy[eV]:{}\n'.format(data['E']))
             x, y, z = data['initial_pos']
@@ -293,6 +299,9 @@ def readEssentials(file):
         line = f.readline()
         file_dict['exit'] = line.split(':')[-1].strip()
 
+        line = f.readline()
+        file_dict['dist'] = float( line.split(':')[-1].strip() )
+        
         line = f.readline()
         file_dict['Z'] = int( line.split(':')[-1].strip() )
 

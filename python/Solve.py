@@ -162,6 +162,9 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
     
     positions = np.asarray(positions)
     x, y, z = positions.T
+    
+    distfromearth = np.array([ x[-1], y[-1], z[-1] ]) - np.array([1,0,0])
+    distfromearth = np.sqrt( np.dot(distfromearth, distfromearth) ) / ReAU
 
     # save to disk
     with open(savefile, 'w') as file:
@@ -175,6 +178,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         else:
             file.write('integration_status: ***failed***\n')
         file.write('exit_status: {}\n'.format(exit_status))
+        file.write('dist_from_earth: {}\n'.format(distfromearth))
         file.write('number_of_protons_Z: {}\n'.format(Z))
         file.write('energy[eV]: {}\n'.format(E))
         file.write('start_pos[AU]: ')

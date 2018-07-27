@@ -101,15 +101,16 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
             return True
         return False
         
-    def isEarthPlane(position, heading, anglelimit=1., earth_pos=np.array([1,0,0])):
+    def isEarthPlane(position, earth_pos=np.array([1,0,0])):
         """Checks if computed path is crossing the Earth plane (aka closest Earth approach).
         returns True if it is, False if not.
         """
-        earth_diff = position - earth_pos
-        earth_diff = earth_diff / np.sqrt( np.dot(earth_diff, earth_diff) )
-        heading = heading / np.sqrt( np.dot(heading, heading) )
-        angle = np.arccos(np.dot(earth_diff, heading)) * 180. / np.pi
-        if np.abs(angle - 90.) < anglelimit:
+        straight = initial_pos - earth_pos
+        straight = straight / np.sqrt( np.dot(straight, straight) )
+        current  = position - earth_pos
+        current  = current / np.sqrt( np.dot(current, current) )
+        angle    = np.arccos(np.dot(straight, current)) * 180. / np.pi
+        if angle >= 90.:
             return True
         return False
         
@@ -133,11 +134,9 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         if isNearSun(positions[-1]):
             exit_status = 'near-sun'
             break
-        if len(positions) > 2:    
-            heading = np.asarray(positions[-1]) - np.asarray(positions[-2])
-            if isEarthPlane(positions[-1], heading):
-                exit_status = 'earth-plane'
-                break
+        if isEarthPlane(positions[-1]):
+            exit_status = 'earth-plane'
+            break
         #if isNearEarth(positions[-1]):
         #    exit_status = 'near-earth'
         #    break

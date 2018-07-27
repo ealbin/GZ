@@ -65,10 +65,11 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     ##################################
     #       Sweep parameters
     #---------------------------------
-    thetax_list = np.array([5., 30., 60., 90., 120., 150., 175.]) * np.pi / 180. # [radians]
+    thetax_list = np.array([175., 150., 120., 90., 60., 30., 5.]) * np.pi / 180. # [radians]
+    
+    Z_list = np.array([Z_uranium, Z_iron, Z_oxygen, Z_helium])
+    A_list = np.array([     238.,    56.,    16.,         4.])
 
-    Z_list = np.array([Z_helium, Z_oxygen, Z_iron, Z_uranium])
-    A_list = np.array([      4.,      16.,    56.,      238.])
     
     energy_list = np.array([2e18, 200e18]) # [eV]
     phix_list   = np.array([0., 120., 240.]) * np.pi / 180. # [radians]

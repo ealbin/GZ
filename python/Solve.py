@@ -147,8 +147,9 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
             start2final = positions[-1] - positions[0]
             heading     = heading     / np.sqrt( np.dot(heading, heading) )
             start2final = start2final / np.sqrt( np.dot(start2final, start2final) ) 
-            angle = np.arccos( np.dot(start2final, heading) ) * 180. / np.pi
-            if angle > 160.:
+            angle90 = np.arccos( np.dot(initial_beta, start2final) ) * 180. / np.pi
+            angle0  = np.arccos( np.dot(initial_beta,     heading) ) * 180. / np.pi
+            if 85. < angle90 < 90. and 0. < angle0 < 5.:
                 exit_status = 'closed-loop'
                 break
             

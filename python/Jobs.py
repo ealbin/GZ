@@ -65,14 +65,14 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     ##################################
     #       Sweep parameters
     #---------------------------------
-    thetax_list = np.array([175., 150., 120., 90., 60., 30., 5.]) * np.pi / 180. # [radians]
+    thetax_list = np.array([5., 30., 60., 90., 120., 150., 175.]) * np.pi / 180. # [radians]
     
     Z_list = np.array([Z_uranium, Z_iron, Z_oxygen, Z_helium])
     A_list = np.array([     238.,    56.,    16.,         4.])
 
     
-    energy_list = np.array([2e18, 200e18]) # [eV]
-    phix_list   = np.array([0., 120., 240.]) * np.pi / 180. # [radians]
+    energy_list = np.array([2e18, 20e18, 200e18]) # [eV]
+    phix_list   = np.array([0., 90., 180., 270.]) * np.pi / 180. # [radians]
     radii_list  = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0]) # [AU]
     
     #---------------------------------
@@ -111,9 +111,11 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                                 skip = True
 
                             # distance from earth at (1,0,0)
+                            # thetax is polar angle from x-axis
+                            # phix is azimultal angle from y to z (aka y axis = 0, z axis = 90)
                             start_x = 1. + R * np.cos(Tx)
-                            start_y = 0. + R * np.sin(Tx) * np.sin(Px)
-                            start_z = 0. + R * np.sin(Tx) * np.cos(Px)
+                            start_y = 0. + R * np.sin(Tx) * np.cos(Px)
+                            start_z = 0. + R * np.sin(Tx) * np.sin(Px)
                     
                             # !!!! SIMULATE Z - .5 for DECAY, aka ave between loss of proton vs neutron !!!!
                             if not skip:

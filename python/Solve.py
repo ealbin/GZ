@@ -128,20 +128,21 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
     while integrator.successful():
         integrator.integrate( integrator.t + dl ) # because "dt" is "dl" in this context
         positions.append( np.asarray(integrator.y[:3]) ) # computed position [AU]
-        if isOutOfBounds(positions[-1]):
-            exit_status = 'out-of-bounds'
-            break
-        if isNearSun(positions[-1]):
-            exit_status = 'near-sun'
-            break
-        if isEarthPlane(positions[-1]):
-            exit_status = 'earth-plane'
-            break
-        #if isNearEarth(positions[-1]):
-        #    exit_status = 'near-earth'
-        #    break
+        if test_field is None:
+            if isOutOfBounds(positions[-1]):
+                exit_status = 'out-of-bounds'
+                break
+            if isNearSun(positions[-1]):
+                exit_status = 'near-sun'
+                break
+            if isEarthPlane(positions[-1]):
+                exit_status = 'earth-plane'
+                break
+            #if isNearEarth(positions[-1]):
+            #    exit_status = 'near-earth'
+            #    break
         
-        if test_field is not None:
+        elif len(positions) > 2:
             heading     = positions[-1] - positions[-2]
             start2final = positions[-1] - positions[0]
             heading     = heading     / np.sqrt( np.dot(heading, heading) )

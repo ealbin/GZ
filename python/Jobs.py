@@ -88,7 +88,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     jobcount = 0
     with open(masterlistpath,'w') as f:
         for Tx in thetax_list:
-            dirname  = 'thetax_{0:03.0f}'.format(Tx*180./np.pi)
+            dirname  = 'THETAX_{0:03.0f}'.format(Tx*180./np.pi)
             fullpath = os.path.join(data_directory, dirname)        
             if not os.path.isdir(fullpath):
                 os.makedirs(fullpath)
@@ -110,9 +110,10 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                             if os.path.exists(pfilepath) and (not OVERWRITE):
                                 skip = True
 
-                            start_x = R * np.cos(Tx)
-                            start_y = R * np.sin(Tx) * np.sin(Px)
-                            start_z = R * np.sin(Tx) * np.cos(Px)
+                            # distance from earth at (1,0,0)
+                            start_x = 1. + R * np.cos(Tx)
+                            start_y = 0. + R * np.sin(Tx) * np.sin(Px)
+                            start_z = 0. + R * np.sin(Tx) * np.cos(Px)
                     
                             # !!!! SIMULATE Z - .5 for DECAY, aka ave between loss of proton vs neutron !!!!
                             if not skip:

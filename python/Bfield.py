@@ -192,7 +192,7 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
             bz.tofile(b_f, sep=text_sep)
             b_f.write('\n')
             
-            #### TODO:
+            #### OPTIONAL TODO:
             # make tar.gz file
         
     # load into memory

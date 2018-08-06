@@ -9,6 +9,7 @@ import sys
 
 from scipy import integrate
 
+import Constants
 import CrossSection
 
 __author__ = "Eric Albin"
@@ -64,8 +65,7 @@ def pdf(cartesian_pos, mass_number, energy_eV, algorithm='simps'):
     See comments below regarding 'algorithm'.  In short, 'simps' is very slow but accurate,
     'quad' is very fast but less accurate.
     """
-    amu2mev = 931.5 # [MeV/c**2] e.g. carbon has an atomic mass of 12, or 12 * amu2mev = 11,178 MeV/c**2
-    mass_eV = mass_number * amu2mev * 1e6 # [eV / c**2]
+    mass_eV = Constants.amu2eV(mass_number) # [eV / c**2]
     lorentz_gamma = energy_eV / mass_eV
 
     alpha_rad = approximateAngle(cartesian_pos)

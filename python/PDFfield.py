@@ -181,7 +181,7 @@ def precompute(mass_number, energy_eV, spacelimit=6, resolution=60, autoload=Tru
             pdf.tofile(p_f, sep=text_sep)
             p_f.write('\n')
             
-            #### TODO:
+            #### OPTIONAL TODO:
             # make tar.gz file
         
     # load into memory

@@ -10,6 +10,7 @@ import time
 
 from scipy import integrate
 
+import Constants
 import Dynamics
 
 __author__ = "Eric Albin"
@@ -21,14 +22,6 @@ __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
 __status__ = "Production"
 
-
-# physical constants / conversions
-m_per_AU = 149597870700. # unit conversion [meters / astronomical unit]
-Rs   = 695508000.        # radius of the Sun [meters]
-RsAU = Rs / m_per_AU     # radius of the Sun [AU]
-Re   = 6378100.          # radius of Earth [meters]
-ReAU = Re / m_per_AU     # radius of Earth [AU]
-c    = 299792458.        # speed of light [meters / second]
 
 def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None, 
                 algorithm='vode', stepsize=100000., test_field=None):
@@ -79,7 +72,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
     
     initial_l = 0. # path begins at 0 distance [AU]
     integrator.set_initial_value(initial_conditions, initial_l).set_f_params(dynamic_ratio, test_field)
-    dl = stepsize / m_per_AU  # numerical stepsize, dl distance (in AU)
+    dl = Constants.meters2AU(stepsize) # numerical stepsize, dl distance (in AU)
     positions = [] # container for positions computed along the path
     
     def isOutOfBounds(position, spacelimit=6, sun_pos=np.array([0,0,0])):
@@ -91,7 +84,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
             return True
         return False
         
-    def isNearSun(position, sunlimit=2*RsAU, sun_pos=np.array([0,0,0])):
+    def isNearSun(position, sunlimit=2*Constants.RadiusAU('sun'), sun_pos=np.array([0,0,0])):
         """ Checks if computed path has found its way to the Sun.
         returns True if near the Sun, False if not.
         """
@@ -114,7 +107,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
             return True
         return False
         
-    def isNearEarth(position, earthlimit=2*ReAU, earth_pos=np.array([1,0,0])):
+    def isNearEarth(position, earthlimit=2*Constants.RadiusAU('earth'), earth_pos=np.array([1,0,0])):
         """ Checks if computed path has found its way to Earth.
         returns True if near Earth, False if not.
         """
@@ -166,7 +159,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
     x, y, z = positions.T
     
     distfromearth = np.array([ x[-1], y[-1], z[-1] ]) - np.array([1,0,0])
-    distfromearth = np.sqrt( np.dot(distfromearth, distfromearth) ) / ReAU
+    distfromearth = np.sqrt( np.dot(distfromearth, distfromearth) ) / Constants.RadiusAU('earth')
 
     # save to disk
     with open(savefile, 'w') as file:
@@ -180,7 +173,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         else:
             file.write('integration_status: ***failed***\n')
         file.write('exit_status: {}\n'.format(exit_status))
-        file.write('dist_from_earth: {}\n'.format(distfromearth))
+        file.write('dist_from_earth[Re]: {}\n'.format(distfromearth))
         file.write('number_of_protons_Z: {}\n'.format(Z))
         file.write('energy[eV]: {}\n'.format(E))
         file.write('start_pos[AU]: ')

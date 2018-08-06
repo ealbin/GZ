@@ -11,6 +11,7 @@ Coordinate system: (x,y,z) Sun === (0,0,0), Earth === (1,0,0)
 
 import numpy as np
 
+import Constants
 import Transform
 
 __author__ = "Eric Albin"
@@ -20,13 +21,10 @@ __license__ = "GPL"
 __version__ = "1.0"
 __maintainer__ = "Eric Albin"
 __email__ = "Eric.K.Albin@gmail.com"
-__status__ = "Development"
+__status__ = "Production"
 
 
 ###########################################################################    
-
-### magnetic units:  1 Telsa = 1e4 Gauss
-Gauss2Tesla = 1e-4 # e.g. B-field [Gauss] * Gauss2Tesla = B-field [Tesla]
 
 ### parametric constants, ref. Akasofu, Gray & Lee (1980):
 Bs = 2.      # [Gauss]
@@ -148,7 +146,7 @@ def solarDynamo(cartesian_pos):
     return cartesian_B # [Gauss]    
 
 
-### TODO
+### OPTIONAL TODO
 def solarRingAGL(cartesian_pos):
     """Compute the solar ring component of the field model given 
     cartesian position in [astronomical units].
@@ -194,7 +192,7 @@ def solarRingEMR(cartesian_pos):
     return cartesian_B # [Gauss]    
 
 
-### TODO
+### OPTIONAL TODO
 def solarRingExact(cartesian_pos):
     """Compute the solar ring component of the field model given 
     cartesian position in [astronomical units].
@@ -230,5 +228,4 @@ def sumBfieldTesla(cartesian_pos):
     returns a magnetic field density vector in Tesla.
     """
     B_total  = sumBfieldGauss(cartesian_pos) # [Gauss]
-    B_total *= Gauss2Tesla # [Tesla]
-    return B_total # [Tesla]
+    return Constants.Gauss2Tesla(B_total) # [Tesla]

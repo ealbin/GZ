@@ -7,6 +7,7 @@ applyForces plays the role of f(t,y), returning the computation of y'(t).
 import numpy as np
 
 import Bfield
+import Constants
 
 __author__ = "Eric Albin"
 __copyright__ = "Copyright 2018, The CRAYFIS Project"
@@ -30,8 +31,8 @@ def applyForces( t, Y, ratio, test_field=None ):
     If optional parameter "test_field" is None, the solar field will be used, otherwise it will use the supplied field,
     e.g. test_field=np.asarray([0,0,10]) [Tesla].
     """
-    m_per_AU = 149597870700. # use:  position [AU] * m_per_AU = converted position [m]
-    c = 299792458. # [meters / second] === speed of light    
+    m_per_AU = Constants.AU2meters(1.) # meters in 1 AU
+    c = Constants.lightspeed_m_per_s() # speed of light in [meters / second]
     
     pos_x , pos_y , pos_z  = Y[0], Y[1], Y[2] # [AU]
     beta_x, beta_y, beta_z = Y[3], Y[4], Y[5] # [unit-less]

@@ -73,7 +73,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     
     energy_list = np.array([2e18, 20e18, 200e18]) # [eV]
     phix_list   = np.array([0., 90., 180., 270.]) * np.pi / 180. # [radians]
-    radii_list  = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0]) # [AU]
+    radii_list  = np.array([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 5.5]) # [AU]
     
     #---------------------------------
     ##################################
@@ -100,12 +100,12 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                             skip  = False
                             skipp = False
                             
-                            filename = 'Z{0:02}_E{1:03.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.dat'.format( Z, E/1e18, Px*180./np.pi, R )
+                            filename = 'Z{0:02}_E{1:03.0f}e18_PHIX{2:03.0f}_R{3:2.1f}.dat'.format( Z, E/1e18, Px*180./np.pi, R )
                             filepath = os.path.join( fullpath, filename )
                             if os.path.exists(filepath) and (not OVERWRITE):
                                 skip = True
 
-                            pfilename = 'Z{0:02}_E{1:03.0f}e18_PHIX_{2:03.0f}_R{3:2.1f}.pdat'.format( Z, E/1e18, Px*180./np.pi, R )
+                            pfilename = 'Z{0:02}_E{1:03.0f}e18_PHIX{2:03.0f}_R{3:2.1f}.pdat'.format( Z, E/1e18, Px*180./np.pi, R )
                             pfilepath = os.path.join( fullpath, pfilename )
                             if os.path.exists(pfilepath) and (not OVERWRITE):
                                 skip = True

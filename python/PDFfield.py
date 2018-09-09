@@ -12,8 +12,10 @@ import tarfile
 import time
 
 from scipy import interpolate
+from scipy import integrate
 from scipy import optimize
 
+import Constants
 import PDFmodel
 
 __author__ = "Eric Albin"
@@ -209,7 +211,11 @@ def cartesianPDF( cartesian_pos, mass_number, energy_eV, close2sun=0.01 ):
     
     global __InterpolatePDF
     if (__InterpolatePDF is not None):
-        PDF = __InterpolatePDF(cartesian_pos)
+        try:
+            PDF = __InterpolatePDF(cartesian_pos)
+        except:
+            # out of bounds, compute explicitly
+            PDF = PDFmodel.pdf(cartesian_pos, mass_number, energy_eV)
         return PDF
     else:
         meshes = precompute(mass_number, energy_eV)
@@ -218,6 +224,51 @@ def cartesianPDF( cartesian_pos, mass_number, energy_eV, close2sun=0.01 ):
         z   = meshes['z']
         PDF = meshes['PDF']
         
-        __InterpolatePDF = interpolate.RegularGridInterpolator((x,y,z), PDF, bounds_error=False, fill_value=0) # [Probability / meter]
+        __InterpolatePDF = interpolate.RegularGridInterpolator((x,y,z), PDF, bounds_error=True) # [Probability / meter]
         
         return cartesianPDF(cartesian_pos, mass_number, energy_eV)
+
+    
+def integratePath( theta_x, phi_x, r, mass_number, energy_eV ):
+    """ Returns the integrated probability for a path specified by theta_x and phi_x, 
+    decaying a distance r away from Earth.  The nuclei has mass_number and energy_eV.
+    Returns dictionary of 'probability' (integrated) and 'path' (path-distance, probability).
+    """
+    # integration parameters
+    stepsize_min = Constants.meters2AU(1e8 ) # [AU]
+    stepsize_max = Constants.meters2AU(1e11) # [AU]
+    integration_limit = 15 # [AU]
+    dist_min = 1. # switch to stepsize_min [AU]
+    dist_max = 8. # switch to stepsize_max [AU]
+    
+    tx_rad    = theta_x * np.pi / 180. # [radians]
+    px_rad    = phi_x   * np.pi / 180. # [radians]
+    heading_x = np.cos(tx_rad)
+    heading_y = np.sin(tx_rad) * np.cos(px_rad)
+    heading_z = np.sin(tx_rad) * np.sin(px_rad)
+    heading   = np.array([ heading_x, heading_y, heading_z ])
+    
+    earth_pos = np.array([1, 0, 0]) # [AU]
+    pos = earth_pos + r * heading   # [AU]
+    
+    # for converting probability / meter into probability / AU
+    m_per_AU = Constants.AU2meters(1.) # [meters / AU]
+    mass_number = int(mass_number)
+    
+    dists = [ 0 ]
+    pdfs  = [ cartesianPDF(pos, mass_number, energy_eV) * m_per_AU ]
+    while np.linalg.norm(pos) < integration_limit:
+        solar_dist = np.linalg.norm(pos)
+        if solar_dist < dist_min: 
+            stepsize = stepsize_min
+        elif solar_dist > dist_max:
+            stepsize = stepsize_max
+        else:
+            stepsize = (solar_dist - dist_min) * (stepsize_max - stepsize_min) / (dist_max - dist_min) + stepsize_min
+        pos = pos + stepsize * heading
+        dists.append( dists[-1] + stepsize )
+        pdfs.append( cartesianPDF(pos, mass_number, energy_eV) * m_per_AU )
+    
+    probability = integrate.simps(pdfs, x=dists, even='first')
+    return {'probability':probability, 'path':np.array([dists, pdfs])}
+

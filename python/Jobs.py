@@ -51,7 +51,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     Z_proton   = 1
     Z_deuteron = 1
     Z_alpha    = 2
-    Z_helium   = 4
+    Z_helium   = 2
     Z_carbon   = 6
     Z_nitrogen = 7
     Z_oxygen   = 8

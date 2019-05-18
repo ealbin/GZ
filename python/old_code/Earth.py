@@ -38,20 +38,20 @@ def surface_coordinates(filepath):
     """    
     # check path
     if not os.path.exists( filepath ):
-        print 'filepath {} does not exist'.format(filepath)
+        print('filepath {} does not exist'.format(filepath))
         return None
         
     earth_pos = [1,0,0] # solar cartesian system [astronomical units]
     file_data = File.read(filepath)
     if file_data['exit_info'] != 'earth-plane':
-        print 'simulation {} did not end at the earth-plane'.format(filepath)
+        print('simulation {} did not end at the earth-plane'.format(filepath))
         return None
     
     R_earth = Constants.RadiusMeters('earth')        
     x = Constants.AU2meters( file_data['last_pos'] - earth_pos ) # earth cartesian system [meters]
     proximity_ratio = np.sqrt(np.dot(x,x)) / R_earth
     if proximity_ratio > 1.0:
-        print 'trajectory {} misses earth by {:3.1f} x Re'.format(filepath, proximity_ratio)
+        print('trajectory {} misses earth by {:3.1f} x Re'.format(filepath, proximity_ratio))
         return None
         
     beta = file_data['last_beta'] 
@@ -111,7 +111,7 @@ def fetch_sims(simulation_dir='../sim/'):
             
             position = surface_coordinates(data['path'])
             if position is None:
-                print '\tskipping..'
+                print('\tskipping..')
                 continue
             lat, lon = latlon(position) 
             data['lat'] = lat
@@ -131,7 +131,7 @@ def fetch_sims(simulation_dir='../sim/'):
             # proton ejection information
             position = surface_coordinates(data['path'][:-3] + 'pdat')
             if position is None:
-                print '\t skipping b/c proton..'
+                print('\t skipping b/c proton..')
                 continue
             lat, lon = latlon(position) 
             data['lat1'] = lat
@@ -300,7 +300,7 @@ def plot(plot_list):
         elif item['Zparent'] == 92:
             color = uranium
         else:
-            print 'uh oh, weird Z'
+            print('uh oh, weird Z')
             return
 
         marker = None        
@@ -317,7 +317,7 @@ def plot(plot_list):
         elif item['R'] > 5.0:
             marker = r6
         else:
-            print 'uh oh, weird R'
+            print('uh oh, weird R')
             return
         
         x, y = map(item['lon'], item['lat'])
@@ -385,8 +385,8 @@ def plot(plot_list):
     """    
     # check for THETAX directory
     if not os.path.exists( os.path.join(simulation_dir, 'THETAX_{:03}'.format(TX)) ):
-        print 'incorrect THETAX value, please select from: ',
-        print [x.strip('THETAX_') for x in os.listdir(os.curdir) if x.find('THETAX') == 0]
+        print('incorrect THETAX value, please select from: ',)
+        print([x.strip('THETAX_') for x in os.listdir(os.curdir) if x.find('THETAX') == 0])
         sys.exit(1)
         
     # proton or nucleus    
@@ -407,14 +407,14 @@ def plot(plot_list):
             data[       'E'].append(   int( tokens[1].strip('E').strip('e18') ) )
             data[      'PX'].append(   int( tokens[2].strip('PHIX') ) )
             data[       'R'].append( float( tokens[3].strip('R.pdat') ) )
-        print 'incorrect value(s), please select from: TX, Zparent, E, PX, R, proton=False(default)'
-        print '\t TX = {}'.format(TX)
+        print('incorrect value(s), please select from: TX, Zparent, E, PX, R, proton=False(default)')
+        print('\t TX = {}'.format(TX))
         for key in data.keys():
             tag = ''
             if key == 'E':
                 tag = 'e18'
             shortlist = sorted( list(set( data[key] )) )
-            print '\t ' + key + ' = {}'.format(shortlist) + tag
+            print('\t ' + key + ' = {}'.format(shortlist) + tag)
         sys.exit(1)
 
     # if all is good, go ahead and fetch from file
@@ -422,14 +422,14 @@ def plot(plot_list):
     earth_pos = [1,0,0] # solar cartesian system [astronomical units]
     file_data = File.read(filepath)
     if file_data['exit_info'] != 'earth-plane':
-        print 'simulation did not end at the earth-plane'
+        print('simulation did not end at the earth-plane')
         sys.exit(1)
     
     R_earth = Constants.RadiusMeters('earth')        
     x = Constants.AU2meters( file_data['last_pos'] - earth_pos ) # earth cartesian system [meters]
     proximity_ratio = np.sqrt(np.dot(x,x)) / R_earth
     if proximity_ratio > 1.0:
-        print 'trajectory misses earth by {:3.1f} x Re'.format(proximity_ratio)
+        print('trajectory misses earth by {:3.1f} x Re'.format(proximity_ratio))
         sys.exit(1)
         
     beta = file_data['last_beta'] 

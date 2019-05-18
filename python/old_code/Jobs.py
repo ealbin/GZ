@@ -44,7 +44,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
     N_cpus_per_node = 16
     N_cpus = N_nodes * N_cpus_per_node
     OVERWRITE = False
-    print 'N cluster cpus: {0}'.format(N_cpus)
+    print('N cluster cpus: {0}'.format(N_cpus))
 
     # convienient constants
     Z_neutron  = 0
@@ -80,7 +80,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
 
     N_combinations = ( Z_list.size * energy_list.size * 
                        radii_list.size * thetax_list.size * phix_list.size )
-    print 'N combinations = {0}'.format(N_combinations)
+    print('N combinations = {0}'.format(N_combinations))
 
     # organize by:
     # GZ/thetax/Z_energy_phix_radius.dat  nuclide with A-1 (take half proton, half neutron, aka Z - 0.5 and A - 1)
@@ -124,7 +124,7 @@ def masterlist(N_nodes=7, OVERWRITE=False):
                             if not skipp:
                                 f.write( '{0} {1} {2} {3} {4} {5}\n'.format(start_x, start_y, start_z,     1,        E/A, pfilepath) )
                                 jobcount += 1
-    print 'prepared {0} jobs'.format(jobcount)
+    print('prepared {0} jobs'.format(jobcount))
                         
 def bundle(N_jobs=1000, N_paths_per_job=10): 
     """Write individual job files for submitting to gpatlas.

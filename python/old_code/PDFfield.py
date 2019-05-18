@@ -152,8 +152,8 @@ def precompute(mass_number, energy_eV, spacelimit=6, resolution=60, autoload=Tru
 
             # progress report for long regenerations
             if ( i / float(i_max) ) >= ( target / 100. ):
-                print '\r                                                           \r',
-                print '  progress: {:.1f}%   elapsed: {:.2f} [sec]'.format(target, time.time() - start ),
+                print('\r                                                           \r',)
+                print('  progress: {:.1f}%   elapsed: {:.2f} [sec]'.format(target, time.time() - start ),)
                 sys.stdout.flush()
                 target += .1
         print

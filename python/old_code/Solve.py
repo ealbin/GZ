@@ -2,6 +2,7 @@
 
 """Compute (solve) trajectories and save to disk.
 """
+# TODO: make numeric stepsize a function of ambient magnetic field strength
 
 import numpy as np
 import platform
@@ -67,7 +68,7 @@ def trajectory( start_pos, Z, E, savefile='./path.data', start_beta=None,
         integrator = integrate.ode(Dynamics.applyForces).set_integrator('dop853')    
         success_code = 1
     else:
-        print "invalid algorithm, please input 'vode', 'lsoda' or 'dop853'"
+        print("invalid algorithm, please input 'vode', 'lsoda' or 'dop853'")
         sys.exit(1)
     
     initial_l = 0. # path begins at 0 distance [AU]

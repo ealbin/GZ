@@ -62,7 +62,7 @@ def RadiusMeters(who):
     elif who.lower() == 'earth':
         return __r_earth_m__
     else:
-        print 'earth or sun'
+        print('earth or sun')
         sys.exit(1)
     
 def RadiusAU(who):
@@ -73,7 +73,7 @@ def RadiusAU(who):
     elif who == 'earth':
         return meters2AU(__r_earth_m__)
     else:
-        print 'earth or sun'
+        print('earth or sun')
         sys.exit(1)
 
 def mass_number(proton_number):

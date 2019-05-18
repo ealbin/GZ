@@ -82,6 +82,7 @@ def pdf(cartesian_pos, mass_number, energy_eV, algorithm='simps'):
     if algorithm == 'simps':
         e_samples = np.logspace(-4, 2, 1000) # good 5 digit precision at 1000 samples
         p_samples = np.zeros(e_samples.size)
+        
         for i, e in enumerate(e_samples):
             p_samples[i] = integrand(e, lorentz_gamma, mass_number, sun_dist, geometry) 
             # [probability / centimeter * electronVolt]
@@ -93,7 +94,7 @@ def pdf(cartesian_pos, mass_number, energy_eV, algorithm='simps'):
                                       args=(lorentz_gamma, mass_number, sun_dist, geometry) ) 
                                       # [probability / centimeter]
     else:
-        print 'wrong algorithm: choose "simps" or "quad"'
+        print('wrong algorithm: choose "simps" or "quad"')
         sys.exit(1)
         
     return pdf_cm * 100. # [probility / meter]

@@ -1,9 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Precompute the total magnetic field, store to disk 
 and use it as an interpolated look-up table to profoundly accelerate
 numeric integration.
 """
+
+__project__     = 'GZ Paper'
+__version__     = 'v1.0'
+__objective__   = 'Phenominology'
+__institution__ = 'University of California, Irvine'
+__department__  = 'Physics and Astronomy'
+__author__      = 'Eric Albin'
+__email__       = 'Eric.K.Albin@gmail.com'
+__updated__     = '13 May 2019'
 
 import numpy as np
 import os
@@ -12,19 +21,8 @@ import tarfile
 import time
 
 from scipy import interpolate
-from scipy import optimize
 
-import SolarMagneticModel
-import Transform
-
-__author__ = "Eric Albin"
-__copyright__ = "Copyright 2018, The CRAYFIS Project"
-__credits__ = ["Eric Albin"]
-__license__ = "GPL"
-__version__ = "1.0"
-__maintainer__ = "Eric Albin"
-__email__ = "Eric.K.Albin@gmail.com"
-__status__ = "Development"
+from . import heliosphere_model
 
 
 # global field values in memory
@@ -111,7 +109,8 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
         regen = True
 
     text_sep = ', '
-    base_dir  = os.path.dirname( os.path.abspath( SolarMagneticModel.__file__ ) )
+    # TODO: update path
+    base_dir  = os.path.dirname( os.path.abspath( heliosphere_model.__file__ ) )
     directory = 'tables'
     b_fname   = 'cartesianBfield.Tesla'
     b_fnameZip= b_fname + '.tar.gz' 
@@ -151,14 +150,14 @@ def precompute(spacelimit=6, resolution=60, autoload=True, directory='tables', b
         target = 0.
         start  = time.time()
         for i, (ix, iy, iz) in enumerate( zip( X.flatten(), Y.flatten(), Z.flatten() ) ):
-            b_solar = SolarMagneticModel.sumBfieldTesla( np.array([ ix, iy, iz ]) )
+            b_solar = heliosphere_model.sumBfieldTesla( np.array([ ix, iy, iz ]) )
             bx[i] = b_solar[0] # [Tesla]
             by[i] = b_solar[1] # [Tesla]
             bz[i] = b_solar[2] # [Tesla]
             # progress report for long regenerations
             if ( i / float(i_max) ) >= ( target / 100. ):
-                print '\r                                                           \r',
-                print '  progress: {:.1f}%   elapsed: {:.2f} [sec]'.format(target, time.time() - start ),
+                print('\r                                                           \r',)
+                print('  progress: {:.1f}%   elapsed: {:.2f} [sec]'.format(target, time.time() - start ),)
                 sys.stdout.flush()
                 target += .1
         print
@@ -220,7 +219,7 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     """
     cartesian_pos = np.array(cartesian_pos)
     if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
-        return SolarMagneticModel.sumBfieldTesla(cartesian_pos)
+        return heliosphere_model.sumBfieldTesla(cartesian_pos)
     
     global __InterpolateBx, __InterpolateBy, __InterpolateBz
     if ( (__InterpolateBx is not None) and (__InterpolateBy is not None) and

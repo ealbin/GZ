@@ -158,7 +158,7 @@ def solarRingAGL(cartesian_pos):
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    
 
-    print "DON'T CALL ME - I'M NOT IMPLEMENTED YET"
+    print("DON'T CALL ME - I'M NOT IMPLEMENTED YET")
     return np.array([ 0, 0, 0 ])
     
 
@@ -204,7 +204,7 @@ def solarRingExact(cartesian_pos):
     theta     = polar_pos[1] # [radians]
     z         = polar_pos[2] # [astronomical units]    
 
-    print "DON'T CALL ME - I'M NOT IMPLEMENTED YET"
+    print("DON'T CALL ME - I'M NOT IMPLEMENTED YET")
     return np.array([ 0, 0, 0 ])    
 
 

@@ -72,3 +72,17 @@ class Cartesian:
 class Polar:
     sun   = cartesian2polar(Cartesian.sun)['rtz']   # [AU, radian, AU]
     earth = cartesian2polar(Cartesian.earth)['rtz'] # [AU, radian, AU]
+
+class Spherical:
+    def rotate(vector, theta, phi):
+        vector = np.asarray(vector, dtype=np.float64)
+        v = np.sqrt(np.dot(vector, vector))
+       
+        u = vector / v
+        u_theta = np.arccos(u[2])
+        u_phi = np.arctan2(u[1], u[0])
+                
+        x = v * np.sin(u_theta + theta) * np.cos(u_phi + phi)
+        y = v * np.sin(u_theta + theta) * np.sin(u_phi + phi)
+        z = v * np.cos(u_theta + theta)
+        return np.asarray([x, y, z])

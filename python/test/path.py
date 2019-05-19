@@ -27,7 +27,7 @@ def run(Z=92, E=2e18, B=1e-6, algorithm='dop853'):
     closest_theta = None
     closest = None
     while (theta <= 2 * 3.2):
-        path.propogate(B_override=Bfield, algorithm=algorithm)
+        path.propagate(B_override=Bfield, algorithm=algorithm)
         r1 = path.dist_sun
         step = path.step
         theta += np.arccos( (r1**2 + r2**2 - step**2) / (2. * r1 * r2) )

@@ -14,6 +14,7 @@ __updated__     = '13 May 2019'
 
 from . import coordinates
 from . import cross_section
+from . import earth
 from . import heliosphere_model
 from . import magnetic_field
 from . import path

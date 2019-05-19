@@ -23,15 +23,15 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
         e_beta = betas[:3]
         d_beta = betas[3:]
 
-    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag)    
-    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag)
+    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag, save=False)    
+    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag, save=False)
     
     eul_start = time.time()
-    eul_out.propogate(B_override=[0,0,1e-4], algorithm='euler')
+    eul_out.propagate(B_override=[0,0,1e-4], algorithm='euler')
     eul_elapsed = time.time() - eul_start
     
     dop_start = time.time()
-    dop_out.propogate(B_override=[0,0,1e-4], algorithm='dop853')
+    dop_out.propagate(B_override=[0,0,1e-4], algorithm='dop853')
     dop_elapsed = time.time() - dop_start
 
     ex = [t[0] for t in eul_out.telementry]

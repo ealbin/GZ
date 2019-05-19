@@ -1,7 +1,9 @@
 #!/user/bin/env python3
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
+import os
 import time
 
 import gz
@@ -111,3 +113,32 @@ def zigzag(Z=92, E=2e18, beta=[0,1,0], trips=10):
     print()
     print('Dop853 error [AU]: ' + str(d_err))
     print('Dop853 error [m]:  ' + str(gz.units.Change.AU_to_meter*d_err))
+    
+    
+def plot(filelist):
+    fig = plt.figure(figsize=[8,8])
+    ax = plt.axes(projection='3d')
+    phi = None
+    
+    for file in filelist:
+        theta = float(os.path.split(file)[1].split('_')[0])
+        phi = float(os.path.split(file)[1].split('_')[1])
+        with open(file) as f:
+            x = []
+            y = []
+            z = []
+
+            for line in f.readlines():
+                if (line.startswith('#')):
+                    continue
+                pos_x, pos_y, pos_z, beta_x, beta_y, beta_z, dist = line.split()
+                x.append(float(pos_x))
+                y.append(float(pos_y))
+                z.append(float(pos_z))
+            ax.plot3D(x, y, z, 'gray')
+
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    ax.view_init(azim=phi-90, elev=0)
+    

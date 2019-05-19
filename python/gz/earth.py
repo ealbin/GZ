@@ -66,7 +66,7 @@ class Earth:
                 self.patches.append(Patch(phi_lo, phi_hi, theta_lo, theta_hi))
                 
     def outgoing_jobs(self, Z, E, max_step=.1, A=None, R_limit=None, runs=100, cone=90., 
-                      seed=None, out_path=None, job_path=None, name_header=None):
+                      seed=None, out_path=None, job_path=None, name_header=None, name_tail=None):
         if (seed is not None):
             np.random.seed(seed)
         
@@ -84,7 +84,13 @@ class Earth:
                 filename = name_header + '_'
             else:
                 filename = ''
-            filename += str(p_mid) + '_' + str(t_mid) + '.py'
+            filename += str(t_mid) + '_' + str(p_mid)
+            
+            if (name_tail is not None):
+                filename += '_' + name_tail
+            else:
+                filename += '_' + str(Z) + '_' + str(int(E/1e18))    
+            filename += '.py'
 
             position = coordinates.Cartesian.earth
             position = position + patch.zenith * units.SI.radius_earth * units.Change.meter_to_AU
@@ -133,13 +139,18 @@ class Earth:
                 phis = 2.*np.pi * np.random.random(runs)
                 thetas = cone * np.pi / 180. * np.random.random(runs)
                 for t, p in zip(thetas, phis):
-                    beta = coordinates.Spherical.rotate(patch.zenith, t, p)
+                    r  = np.cos(t)
+                    th = np.sin(t) * np.cos(p)
+                    ph = np.sin(t) * np.sin(p)
+                    theta = np.arccos(patch.zenith[2])
+                    phi   = np.arctan2(patch.zenith[1], patch.zenith[0])
+                    beta = coordinates.Spherical.toCartesian([r, th, ph], theta, phi)
                     
                     if (name_header is not None):
                         out_name = name_header + '_'
                     else:
                         out_name = ''
-                    out_name += str(p_mid) + '_' + str(t_mid) + '_'
+                    out_name += str(t_mid) + '_' + str(p_mid) + '_'
                     out_name += str(Z) + '_' + str(int(E/1e18)) + '_'
                     out_name += str(int(t * 180. / np.pi)) + '_' + str(int(p * 180./np.pi))
                     

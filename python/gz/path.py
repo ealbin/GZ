@@ -139,9 +139,9 @@ class Outgoing(Path):
         R_limit: radius [AU] of maximum propagation
         """        
         if (max_step is None):
-            super().__init__(position, beta, -Z, E)
+            Path.__init__(self, position, beta, -Z, E)
         else:
-            super().__init__(position, beta, -Z, E, max_step=max_step)
+            Path.__init__(self, position, beta, -Z, E, max_step=max_step)
         
         self.A = A
         self.R_limit = R_limit
@@ -167,7 +167,7 @@ class Outgoing(Path):
            
     def _set_stepsize(self):
         # any special needs here
-        return super()._set_stepsize()
+        return Path._set_stepsize(self)
     
     def propagate(self, B_override=None, step_override=None, algorithm='dop853'):
         """
@@ -198,7 +198,7 @@ class Outgoing(Path):
         
         start = time.time()
         while (stop_condition()):
-            super().propagate(B_override=self.B, step_override=self.step, algorithm=algorithm)        
+            Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)        
             self._add_telemetry()
         self.elapsed_sec = time.time() - start
         

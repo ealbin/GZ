@@ -24,7 +24,20 @@ class Solar:
         as measured in the reference frame of the Sun.
         Black body spectrum with T = 5770 K.
         """    
+        if (energy_eV == 0.):
+            return 0.
         scale = 7.8e7  
         r_dependence = 1. / distance_AU**2
         e_dependence = energy_eV**2 / ( np.exp(energy_eV / .5) - 1. ) 
         return scale * r_dependence * e_dependence
+
+class CMB:
+    
+    # TODO:
+    def dNdE(energy_eV):
+        if (energy_eV == 0.):
+            return 0.
+        scale = 1. / np.pi**2 # / (hbar c)**3
+        kT = 1. # = kB * 2.725 K
+        e_dependence = energy_eV**2 / ( np.exp(energy_eV / kT) - 1. )
+        return scale * e_dependence

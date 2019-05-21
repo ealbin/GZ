@@ -80,12 +80,13 @@ class Solar:
         # The downside is it is a few orders of magnitude slower than quad.
         if (algorithm == 'simps'):
             e_samples = np.logspace(-4, 2, 1000) # good 5 digit precision at 1000 samples
-            a_samples = np.zeros(e_samples.size)
+            i_samples = np.zeros(e_samples.size)
             
             for i, e in enumerate(e_samples):
-                a_samples[i] = Solar.integrand(e, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section) 
+                i_samples[i] = Solar.integrand(e, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section) 
                 # [probability / centimeter * electronVolt]
-            atten_cm = 1. / integrate.simps( a_samples, x=e_samples ) # [centimeters]
+
+            atten_cm = 1. / integrate.simps( i_samples, x=e_samples ) # [centimeters]
             
         else: # algorithm == 'quad'
             # upper limit capped at 100 eV instead of infinity to avoid undersampling:
@@ -95,3 +96,53 @@ class Solar:
             
         atten_m = atten_cm / 100. # [meters]
         return atten_m * units.Change.meter_to_AU # [AU]
+    
+    
+    def get_photon(position, beta, proton_number, nuclide_energy, 
+                   cross_section=cross_section.Photodissociation.singleNucleon, 
+                   mass_number=None, seed=None):
+        
+        if (mass_number == None):
+            mass_number = units.Nuclide.mass_number(proton_number)
+
+        mass_eV = mass_number * units.Change.amu_to_eV # [eV / c**2]
+        lorentz_gamma = nuclide_energy / mass_eV
+    
+        dist_sun = np.sqrt( np.dot(position, position) )
+        r_hat = position / dist_sun
+        beta = beta / np.sqrt( np.dot(beta, beta) )
+    
+        alpha_radians = np.arccos( np.dot( -r_hat, beta) )
+        geo_factor = 2. * np.cos(alpha_radians / 2.)**2
+        
+        e_samples = np.logspace(-4, 2, 1000)
+        i_samples = np.zeros(e_samples.size)
+        for i, e in enumerate(e_samples):
+            i_samples[i] = Solar.integrand(e, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section) 
+
+        cdf = np.zeros(e_samples.size)
+        cdf[0] = 0.
+        for i in range(e_samples.size):
+            if (i == 0):
+                continue
+            cdf[i] = integrate.simps(i_samples[:i], x=e_samples[:i])
+            # [probability / centimeter]
+        
+        if (seed is not None):
+            np.random.seed(seed)
+        val = cdf[-1] * np.random.random()
+        
+        for i, ec in enumerate(zip(e_samples, cdf)):
+            e = ec[0]
+            c = ec[1]
+            if (c < val):
+                continue
+            if (c == val):
+                return e
+            c1 = cdf[i-1]
+            c2 = c
+            e1 = e_samples[i-1]
+            e2 = e
+            slope = (e2 - e1) / (c2 - c1)
+            return slope * (val - c1) + e1
+            

@@ -25,8 +25,8 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
         e_beta = betas[:3]
         d_beta = betas[3:]
 
-    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag, save=False)    
-    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag, save=False)
+    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag, save=False, max_step=.1)    
+    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag, save=False, max_step=.1)
     
     eul_start = time.time()
     eul_out.propagate(B_override=[0,0,1e-4], algorithm='euler')
@@ -36,11 +36,11 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
     dop_out.propagate(B_override=[0,0,1e-4], algorithm='dop853')
     dop_elapsed = time.time() - dop_start
 
-    ex = [t[0] for t in eul_out.telementry]
-    ey = [t[1] for t in eul_out.telementry]
+    ex = [t[0] for t in eul_out.telemetry]
+    ey = [t[1] for t in eul_out.telemetry]
     
-    dx = [t[0] for t in dop_out.telementry]
-    dy = [t[1] for t in dop_out.telementry]
+    dx = [t[0] for t in dop_out.telemetry]
+    dy = [t[1] for t in dop_out.telemetry]
 
     if (plot):    
         plt.figure(figsize=[8,8])
@@ -59,8 +59,8 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
         print('Difference [meters]: ' + str(difference))
         print()
         
-        print('Euler steps:  ' + str(len(eul_out.telementry)))
-        print('Dop853 steps: ' + str(len(dop_out.telementry)))
+        print('Euler steps:  ' + str(len(eul_out.telemetry)))
+        print('Dop853 steps: ' + str(len(dop_out.telemetry)))
     else:
         return ex, ey, eul_out.position, eul_out.beta, dx, dy, dop_out.position, dop_out.beta
 

@@ -23,6 +23,8 @@ from scipy import integrate
 
 from . import coordinates
 from . import magnetic_field
+from . import probability
+from . import relativity
 from . import units
 
 class Path:
@@ -58,7 +60,7 @@ class Path:
         self.dist_sun = np.sqrt(np.dot(r, r))
 
     def _set_stepsize(self):
-        if (self.ratio == 0.):
+        if (self.ratio == 0. or np.sqrt(np.dot(self.B, self.B)) == 0.):
             self.step = self.max_step
         else:
             B = np.sqrt(np.dot(self.B, self.B))
@@ -124,7 +126,6 @@ class Path:
 class Outgoing(Path):
     
     LIMIT_BUFFER  = 2. # AU
-    
     DEFAULT_SAVE_PATH = './telemetry'
     
     def __init__(self, position, beta, Z, E,
@@ -146,7 +147,7 @@ class Outgoing(Path):
         self.A = A
         self.R_limit = R_limit
         
-        self.telementry = [np.concatenate([self.position, self.beta, [self.distance]])]
+        self.telemetry = [np.concatenate([self.position, self.beta, [self.distance]])]
         self.last_save = self.distance
         self.save_distance = self.max_step / 10.
         
@@ -162,12 +163,18 @@ class Outgoing(Path):
         if (self.dist_sun < near_sun or self.dist_earth < near_earth
             or self.distance - self.last_save >= self.save_distance):
             
-            self.telementry.append(np.concatenate([self.position, self.beta, [self.distance]]))     
+            self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))     
             self.last_save = self.distance
            
+    def _set_B(self, B_override=None):
+        if (B_override is not None):
+            self.B = np.asarray(B_override, dtype=np.float64)
+        else:
+            self.B = magnetic_field.cartesianTesla(self.position)         
+        
     def _set_stepsize(self):
         # any special needs here
-        return Path._set_stepsize(self)
+        Path._set_stepsize(self)
     
     def propagate(self, B_override=None, step_override=None, algorithm='dop853'):
         """
@@ -175,10 +182,7 @@ class Outgoing(Path):
         B_override: use this B instead of Bfield
         step_override: use this step instead of step()
         """
-        if (B_override is not None):
-            self.B = np.asarray(B_override, dtype=np.float64)
-        else:
-            self.B = magnetic_field.cartesianTesla(self.position) 
+        self._set_B(B_override=B_override)
         
         if (step_override is not None):
             self.step = step_override
@@ -198,12 +202,15 @@ class Outgoing(Path):
         
         start = time.time()
         while (stop_condition()):
-            Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)        
+            Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm) 
+            self._set_B(B_override=B_override)
             self._add_telemetry()
+            if (step_override is not None):
+                self._set_stepsize()
         self.elapsed_sec = time.time() - start
         
         if (self.last_save < self.distance):
-            self.telementry.append(np.concatenate([self.position, self.beta, [self.distance]]))
+            self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))
         
         if (self.save):
             self.algorithm = algorithm
@@ -255,7 +262,7 @@ class Outgoing(Path):
             f.write('# units: positions=AU, beta=unitless, distance=AU\n')
             f.write('#\n')
             f.write('# Telemetry\n')
-            for _ in self.telementry:
+            for _ in self.telemetry:
                 for val in _:
                     f.write(str(val) + ' ')
                 f.write('\n')
@@ -264,4 +271,157 @@ class Outgoing(Path):
         #self.pdf = PDFmodel.pdf(self.position, self.A, self.E, algorithm='simps')
 
 class Incoming(Outgoing):
-    pass
+    
+    def __init__(self, origin, position, beta, Z, A, E, decay_dist, 
+                 max_step=None, R_limit=6., save=True, save_path=None, filename=None):
+        
+        if (max_step is None):
+            Path.__init__(self, position, beta, Z, E)
+        else:
+            Path.__init__(self, position, beta, Z, E, max_step=max_step)
+        
+        self.origin = origin
+        self.decay_dist = decay_dist
+        self.A = A
+        self.R_limit = R_limit
+        
+        self.telemetry = [np.concatenate([self.position, self.beta, [self.distance]])]
+        self.last_save = self.distance
+        self.save_distance = self.max_step / 10.
+        
+        self.save = save
+        self.save_path = save_path
+        self.filename = filename
+        
+    def _add_telemetry(self):
+        # add anything custom
+        Outgoing._add_telemetry(self)
+            
+    def _set_stepsize(self):
+        Path._set_stepsize(self)         
+        if (self.dist_earth - self.step < units.SI.radius_earth * units.Change.meter_to_AU):
+            self.step = self.dist_earth - units.SI.radius_earth * units.Change.meter_to_AU
+            
+    def propagate(self, B_override=None, step_override=None, algorithm='dop853', seed=None):
+        """
+        Propagates one step
+        B_override: use this B instead of Bfield
+        step_override: use this step instead of step()
+        """
+        Outgoing._set_B(self, B_override=B_override)
+        
+        if (step_override is not None):
+            self.step = step_override
+        else:
+            if (algorithm == 'euler'):
+                self.step_divisor = Path.EULER_DIVISOR
+            elif (algorithm == 'dop853'):
+                self.step_divisor = Path.DOP853_DIVISOR
+            self._set_stepsize()        
+        
+        def remaining():
+            return self.decay_dist - self.distance
+     
+        # Propogate nucleus until time to dissintegrate
+        start = time.time()
+        while (remaining() > 0):
+            if (remaining() < self.step):
+                self.step = remaining()
+            Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)  
+            Outgoing._set_B(self, B_override=B_override)
+            self._add_telemetry()
+            if (step_override is not None):
+                self._set_stepsize()
+        if (self.last_save < self.distance):
+            self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))
+
+        # Photodissintegration
+        # "1" = original nucleus
+        # "2" = solar photon
+        # "3" = proton or neutron
+        # "4" = daughter nucleus
+        e1 = self.E
+        p1 = relativity.momentum(e1, self.A * units.Change.amu_to_eV, self.beta)
+        e2 = probability.Solar.get_photon(self.position, self.beta, self.Z, self.E, seed=seed) # seed is set here
+        p2 = relativity.momentum(e2, 0., self.position / self.dist_sun)
+        
+        Epn =  1.          / self.A * (self.E + e2) # proton/neutron energy
+        Ed  = (self.A - 1) / self.A * (self.E + e2) # daugter nucleous energy
+        Zp  = 1 # proton charge
+        Zn  = 0 # neutron charge
+        Zdp = self.Z - 1 # daughter (proton ejection) charge
+        Zdn = self.Z     # daughter (neutron ejection) charge
+
+        e3 = Epn
+        m3 = 1. * units.Change.amu_to_eV
+        e4 = Ed
+        m4 = (self.A - 1) * units.Change.amu_to_eV
+        
+        # "p" is the net 3-momentum
+        p       = p1 + p2
+        p_mag   = np.sqrt(np.dot(p, p))
+        p_hat   = p / p_mag
+        p_theta = np.arccos(p_hat[2])
+        p_phi   = np.arctan2(p_hat[1], p_hat[0])
+        
+        p3_mag = relativity.momentum_mag(e3, m3)
+        p4_mag = relativity.momentum_mag(e4, m4)
+        
+        # Angle between p3 and p4
+        theta = relativity.theta(e1, p1, e2, p2, e3, m3, e4, m4)
+        # Angle between p3 and p
+        theta3 = np.arccos( (p3_mag * p4_mag * np.cos(theta) + p3_mag**2) / (p3_mag * p_mag) )
+        # Azimuthal angle around p
+        phi3 = 2. * np.pi * np.random.random()
+        
+        p3_r = p3_mag * np.cos(theta3)
+        p3_t = p3_mag * np.sin(theta3) * np.cos(phi3)
+        p3_p = p3_mag * np.sin(theta3) * np.sin(phi3) 
+        p3 = coordinates.Spherical.toCartesian(np.asarray([p3_r, p3_t, p3_p]), p_theta, p_phi)
+        p4 = p - p3
+        
+        beta_3 = p3 / p3_mag
+        beta_4 = p4 / p4_mag
+        
+        self.p_path  = Incoming(None, self.position, beta_3, Zp,  None, e3, None, max_step=self.max_step) # ejected proton
+        self.n_path  = Incoming(None, self.position, beta_3, Zn,  None, e3, None, max_step=self.max_step) # ejected neutron
+        self.dp_path = Incoming(None, self.position, beta_4, Zdp, None, e4, None, max_step=self.max_step) # Z-1 nucleus
+        self.dn_path = Incoming(None, self.position, beta_4, Zdn, None, e4, None, max_step=self.max_step) # A-1 nucleus
+
+        for subpath in [self.p_path, self.n_path, self.dp_path, self.dn_path]:
+            subpath.sub_propogate(B_override=B_override, step_override=step_override, algorithm=algorithm)
+                        
+        self.elapsed_sec = time.time() - start
+            
+        if (self.save):
+            self.algorithm = algorithm
+            self.save_telemetry()
+            
+    # Sub-propogate children
+    def sub_propogate(self, B_override=None, step_override=None, algorithm='dop853'):
+
+        Outgoing._set_B(self, B_override=B_override)
+        
+        if (step_override is not None):
+            self.step = step_override
+        else:
+            if (algorithm == 'euler'):
+                self.step_divisor = Path.EULER_DIVISOR
+            elif (algorithm == 'dop853'):
+                self.step_divisor = Path.DOP853_DIVISOR
+            self._set_stepsize()                
+        
+        dist_earth_init = self.dist_earth
+        
+        def keep_going():
+            if (self.dist_earth > units.SI.radius_earth * units.Change.meter_to_AU
+                and self.distance < dist_earth_init + Outgoing.LIMIT_BUFFER):
+                return True
+            return False
+
+        while (keep_going()):
+            Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)
+            Outgoing._set_B(self, B_override=B_override)
+            self._add_telemetry()            
+        if (self.last_save < self.distance):
+            self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))

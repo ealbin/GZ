@@ -20,4 +20,5 @@ from . import magnetic_field
 from . import path
 from . import photon_field
 from . import probability
+from . import relativity
 from . import units

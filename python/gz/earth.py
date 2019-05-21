@@ -46,6 +46,12 @@ class Earth:
     
     OUT_JOB_PATH = './out_jobs'
     
+    def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 26e18, 200e18], runs=1000):
+        earth = Earth()
+        for z in Zlist:
+            for e in Elist:
+                earth.outgoing_jobs(z, e, runs)
+    
     def __init__(self, wedges=4, bands=3):
         self.wedges = wedges
         self.bands = bands

@@ -6,3 +6,4 @@
 from . import stepsize
 from . import path
 from . import outgoing
+from . import incoming

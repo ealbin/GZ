@@ -121,8 +121,12 @@ def plot(filelist):
     phi = None
     
     for file in filelist:
-        theta = float(os.path.split(file)[1].split('_')[0])
-        phi = float(os.path.split(file)[1].split('_')[1])
+        peek = os.path.split(file)[1].split('_')[0]
+        offset = 0
+        if (not peek.isdigit()):
+            offset = 1
+        theta = float(os.path.split(file)[1].split('_')[offset])
+        phi = float(os.path.split(file)[1].split('_')[offset + 1])
         with open(file) as f:
             x = []
             y = []
@@ -135,12 +139,19 @@ def plot(filelist):
                 x.append(float(pos_x))
                 y.append(float(pos_y))
                 z.append(float(pos_z))
-            ax.plot3D(x, y, z, 'gray')
+            ax.plot3D(x, y, z, color=tuple(np.random.random(3)))
+            #ax.plot3D(x[:2], y[:2], z[:2], color=tuple(np.random.random(3)))
+            #ax.plot(y, z, zdir='x', color=tuple(np.random.random(3)))
 
+    gz.earth.Earth().draw(ax)
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
-    ax.view_init(azim=phi-90, elev=0)
+    #delta=.001
+    #ax.set_xlim(1-delta, 1+delta)
+    #ax.set_ylim(-delta, delta)
+    #ax.set_zlim(-delta, delta)
+    #ax.view_init(azim=phi-90, elev=0)
     
     
 def accuracy(Z=92, E=2e18, beta=[0,1,0], divisor1=1e2, divisor2=1e3, divisor3=1e4):    

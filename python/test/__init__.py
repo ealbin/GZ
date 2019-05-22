@@ -4,6 +4,7 @@
 """
 
 from . import stepsize
+from . import probability
 from . import path
 from . import outgoing
 from . import incoming

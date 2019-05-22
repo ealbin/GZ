@@ -49,11 +49,11 @@ class Earth:
     
     OUT_JOB_PATH = './out_jobs'
     
-    def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 26e18, 200e18], runs=1000):
+    def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 20e18, 200e18], runs=1000):
         earth = Earth()
         for z in Zlist:
             for e in Elist:
-                earth.outgoing_jobs(z, e, runs)
+                earth.outgoing_jobs(z, e, max_step=.01, runs=runs, cone=90.)
     
     def __init__(self, wedges=4, bands=3):
         self.wedges = wedges
@@ -73,7 +73,30 @@ class Earth:
                 theta_lo = self.theta_offset + b * self.theta_sep
                 theta_hi = theta_lo + self.theta_sep
                 self.patches.append(Patch(phi_lo, phi_hi, theta_lo, theta_hi))
-                
+
+
+    def draw(self, ax=None):
+        if (ax is None):
+            fig = plt.figure(figsize=[16,16])
+            ax = plt.axes(projection='3d')
+        
+        for patch in self.patches:      
+            phi_lo = patch.phi_lo * np.pi / 180.
+            phi_hi = patch.phi_hi * np.pi / 180.
+            theta_lo = patch.theta_lo * np.pi / 180.
+            theta_hi = patch.theta_hi * np.pi / 180.
+            
+            u, v = np.mgrid[phi_lo:phi_hi:10j, theta_lo:theta_hi:10j]
+            r = units.SI.radius_earth * units.Change.meter_to_AU
+            x = r * np.cos(u)*np.sin(v)
+            y = r * np.sin(u)*np.sin(v)
+            z = r * np.cos(v)
+            x += coordinates.Cartesian.earth[0]
+            y += coordinates.Cartesian.earth[1]
+            z += coordinates.Cartesian.earth[2]
+            ax.plot_surface(x, y, z, color=tuple(np.random.rand(3)))
+
+ 
     def outgoing_jobs(self, Z, E, max_step=.01, A=None, R_limit=None, runs=100, cone=90., 
                       seed=None, out_path=None, job_path=None, name_header=None, name_tail=None,
                       B_override=None):
@@ -182,24 +205,103 @@ class Earth:
                     f.write('outgoing.propagate(' + args + ')\n\n')
       
         
-    def draw(self, ax=None):
-        if (ax is None):
-            fig = plt.figure(figsize=[16,16])
-            ax = plt.axes(projection='3d')
-        
-        for patch in self.patches:      
-            phi_lo = patch.phi_lo * np.pi / 180.
-            phi_hi = patch.phi_hi * np.pi / 180.
-            theta_lo = patch.theta_lo * np.pi / 180.
-            theta_hi = patch.theta_hi * np.pi / 180.
+    def incoming_jobs(directory=None, filelist=None):
+
+        if (directory is not None):
+            filelist = []
+            for file in os.listdir(directory):
+                if (file.endswith('.outgoing')):
+                    filelist.append(file)
+
+        for file in filelist:
+            with open(file, 'r') as f:
+                Z = None
+                A = None
+                E = None
+                algorithm = None
+                max_step = None
+                R_limit = None
+                B_override = None
+                step_override = None
+                telemetry = []
+                seek = 0
+                for _, line in enumerate(f.readlines()):
+                    
+                    search = '# Z='
+                    if (line.startswith(search)):
+                        Z = int( line[len(search):].split()[0] )
+                        continue
+                    
+                    search = '# A='
+                    if (line.startswith(search)):
+                        A = line[len(search):].split()[0]
+                        try:
+                            A = float(A)
+                        except ValueError:
+                            A = None
+                        continue
+                    
+                    search = '# E='
+                    if (line.startswith(search)):
+                        E = float( line[len(search):].split()[0] )
+                        continue
+                    
+                    search = '# Algorithm='
+                    if (line.startswith(search)):
+                        algorithm = line[len(search):].split()[0]
+                        continue                    
+
+                    search = '# Max_Step='
+                    if (line.startswith(search)):
+                        max_step = line[len(search):].split()[0]
+                        try:
+                            max_step = float(max_step)
+                        except ValueError:
+                            max_step = None
+                        continue
+
+                    search = '# R_Limit='
+                    if (line.startswith(search)):
+                        R_limit = line[len(search):].split()[0]
+                        try:
+                            R_limit = float(R_limit)
+                        except ValueError:
+                            R_limit = None
+                        continue
             
-            u, v = np.mgrid[phi_lo:phi_hi:10j, theta_lo:theta_hi:10j]
-            r = units.SI.radius_earth * units.Change.meter_to_AU
-            x = r * np.cos(u)*np.sin(v)
-            y = r * np.sin(u)*np.sin(v)
-            z = r * np.cos(v)
-            x += coordinates.Cartesian.earth[0]
-            y += coordinates.Cartesian.earth[1]
-            z += coordinates.Cartesian.earth[2]
-            ax.plot_surface(x, y, z, color=tuple(np.random.rand(3)))
-    
+                    search = '# B_Override='
+                    if (line.startswith(search)):
+                        B_override = line[len(search):].split()
+                        try:
+                            B_override = np.asarray(B_override[:3], dtype=np.float64)
+                        except ValueError:
+                            B_override = None
+                        continue                        
+
+                    search = '# Step_Override='
+                    if (line.startswith(search)):
+                        step_override = line[len(search):].split()[0]
+                        try:
+                            step_override = float(step_override)
+                        except ValueError:
+                            step_override = None
+                        continue
+            
+                    search = '# Telemetry'
+                    if (line.startswith(search)):
+                        f.seek(0)
+                        seek = _
+                        break
+                
+                for line in f.readlines()[seek + 1:]:
+                    telemetry.append(np.asarray(line.split(), dtype=np.float64))
+                
+                origin = telemetry[0][:3]
+                position = telemetry[-1][:3]
+                beta = -1 * telemetry[-1][3:6]
+                
+                print('max step = ' + str(max_step))
+
+
+#    def __init__(self, origin, position, beta, Z, A, E, decay_dist, 
+#                 max_step=None, R_limit=6., save=True, save_path=None, filename=None):

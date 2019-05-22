@@ -182,6 +182,9 @@ class Outgoing(Path):
         B_override: use this B instead of Bfield
         step_override: use this step instead of step()
         """
+        self.B_override = B_override
+        self.step_override = step_override
+        
         self._set_B(B_override=B_override)
         
         if (step_override is not None):
@@ -258,6 +261,13 @@ class Outgoing(Path):
             f.write('# A=' + str(self.A) + ' [atomic mass units]\n')
             f.write('# E=' + str(self.E) + ' [electron volts]\n')
             f.write('# Algorithm=' + self.algorithm + '\n')
+            f.write('# Max_Step=' + str(self.max_step) + ' [AU]\n')
+            f.write('# R_Limit=' + str(self.R_limit) + ' [AU]\n')
+            B_str = str(self.B_override)
+            if (self.B_override is not None):
+                B_str = str(self.B_override[0]) + ' ' + str(self.B_override[1]) + ' ' + str(self.B_override[2])
+            f.write('# B_Override=' + B_str + ' [T]\n')
+            f.write('# Step_Override=' + str(self.step_override) + '\n')
             f.write('#\n')
             f.write('# Key\n')
             f.write('# position_x, position_y, position_z, beta_x, beta_y, beta_z, path_distance\n')
@@ -269,8 +279,6 @@ class Outgoing(Path):
                     f.write(str(val) + ' ')
                 f.write('\n')
 
-        # pdf stuff going to post-processing
-        #self.pdf = PDFmodel.pdf(self.position, self.A, self.E, algorithm='simps')
 
 class Incoming(Outgoing):
     

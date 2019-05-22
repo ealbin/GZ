@@ -33,6 +33,9 @@ def oneOrMore(atten_length, distance):
 
 class Solar:    
 
+    ENERGY_LOW_EXPONENT  = -15.
+    ENERGY_HIGH_EXPONENT = 3.
+    ENERGY_SAMPLES       = 2000
     
     def integrand(photon_energy, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section):
         """Returns the integrand of the energy integral for computing the attenuation.
@@ -79,7 +82,8 @@ class Solar:
         # tends to undersample the integrand between 0 and 1 [eV] (aka the most important part).
         # The downside is it is a few orders of magnitude slower than quad.
         if (algorithm == 'simps'):
-            e_samples = np.logspace(-4, 2, 1000) # good 5 digit precision at 1000 samples
+            # good 5 digit precision at 1000 samples
+            e_samples = np.logspace(Solar.ENERGY_LOW_EXPONENT, Solar.ENERGY_HIGH_EXPONENT, Solar.ENERGY_SAMPLES) 
             i_samples = np.zeros(e_samples.size)
             
             for i, e in enumerate(e_samples):
@@ -100,7 +104,7 @@ class Solar:
     
     def get_photon(position, beta, proton_number, nuclide_energy, 
                    cross_section=cross_section.Photodissociation.singleNucleon, 
-                   mass_number=None, seed=None):
+                   mass_number=None, seed=None, size=1, plottables=False, CDF=False):
         
         if (mass_number == None):
             mass_number = units.Nuclide.mass_number(proton_number)
@@ -115,34 +119,51 @@ class Solar:
         alpha_radians = np.arccos( np.dot( -r_hat, beta) )
         geo_factor = 2. * np.cos(alpha_radians / 2.)**2
         
-        e_samples = np.logspace(-4, 2, 1000)
+        e_samples = np.logspace(Solar.ENERGY_LOW_EXPONENT, Solar.ENERGY_HIGH_EXPONENT, Solar.ENERGY_SAMPLES) 
         i_samples = np.zeros(e_samples.size)
         for i, e in enumerate(e_samples):
             i_samples[i] = Solar.integrand(e, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section) 
 
         cdf = np.zeros(e_samples.size)
-        cdf[0] = 0.
         for i in range(e_samples.size):
             if (i == 0):
                 continue
-            cdf[i] = integrate.simps(i_samples[:i], x=e_samples[:i])
+            cdf[i-1] = integrate.simps(i_samples[:i], x=e_samples[:i])
             # [probability / centimeter]
+        cdf[-1] = cdf[-2]
         
         if (seed is not None):
             np.random.seed(seed)
-        val = cdf[-1] * np.random.random()
+        val = (cdf[-1] - cdf[0]) * np.random.random(size) + cdf[0]
+
+        out = []
+        for v in val:
+            for i, ec in enumerate(zip(e_samples, cdf)):
+                e = ec[0]
+                c = ec[1]
+                if (c < v):
+                    continue
+                if (c == v):
+                    out.append(e)
+                    break
+                c1 = cdf[i-1]
+                c2 = c
+                e1 = e_samples[i-1]
+                e2 = e
+                slope = (e2 - e1) / (c2 - c1)
+                out.append(slope * (v - c1) + e1)
+                break
         
-        for i, ec in enumerate(zip(e_samples, cdf)):
-            e = ec[0]
-            c = ec[1]
-            if (c < val):
-                continue
-            if (c == val):
-                return e
-            c1 = cdf[i-1]
-            c2 = c
-            e1 = e_samples[i-1]
-            e2 = e
-            slope = (e2 - e1) / (c2 - c1)
-            return slope * (val - c1) + e1
+        if (size == 1):
+            out = out[0]
+            
+        if (plottables):
+            if (CDF):
+                out = out, e_samples, i_samples / cdf[-1], cdf
+            else:
+                out = out, e_samples, i_samples / cdf[-1]
+        elif (CDF):
+            out = out, e_samples, cdf
+            
+        return out
             

@@ -195,6 +195,8 @@ class Outgoing(Path):
         
         if (self.zigzag):
             def stop_condition():
+                if (self.distance + self.step > self.R_limit + Outgoing.LIMIT_BUFFER):
+                    self.step = self.R_limit + Outgoing.LIMIT_BUFFER - self.distance
                 return self.distance < self.R_limit + Outgoing.LIMIT_BUFFER
         else:
             def stop_condition():

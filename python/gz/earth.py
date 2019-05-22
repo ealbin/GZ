@@ -17,6 +17,9 @@ import numpy as np
 import os
 import platform
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 from . import coordinates
 from . import units
 
@@ -71,8 +74,9 @@ class Earth:
                 theta_hi = theta_lo + self.theta_sep
                 self.patches.append(Patch(phi_lo, phi_hi, theta_lo, theta_hi))
                 
-    def outgoing_jobs(self, Z, E, max_step=.1, A=None, R_limit=None, runs=100, cone=90., 
-                      seed=None, out_path=None, job_path=None, name_header=None, name_tail=None):
+    def outgoing_jobs(self, Z, E, max_step=.01, A=None, R_limit=None, runs=100, cone=90., 
+                      seed=None, out_path=None, job_path=None, name_header=None, name_tail=None,
+                      B_override=None):
         if (seed is not None):
             np.random.seed(seed)
         
@@ -171,5 +175,31 @@ class Earth:
                     args += 'save_path=' + str(out_path) + ', '
                     args += 'filename=' + "'" + out_name + "'"
                     f.write('outgoing = gz.path.Outgoing(' + args + ')\n') 
-                    f.write('outgoing.propagate()\n\n')
+                    args = ''
+                    if (B_override is not None):
+                        b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
+                        args = 'B_override=' + b_str                    
+                    f.write('outgoing.propagate(' + args + ')\n\n')
       
+        
+    def draw(self, ax=None):
+        if (ax is None):
+            fig = plt.figure(figsize=[16,16])
+            ax = plt.axes(projection='3d')
+        
+        for patch in self.patches:      
+            phi_lo = patch.phi_lo * np.pi / 180.
+            phi_hi = patch.phi_hi * np.pi / 180.
+            theta_lo = patch.theta_lo * np.pi / 180.
+            theta_hi = patch.theta_hi * np.pi / 180.
+            
+            u, v = np.mgrid[phi_lo:phi_hi:10j, theta_lo:theta_hi:10j]
+            r = units.SI.radius_earth * units.Change.meter_to_AU
+            x = r * np.cos(u)*np.sin(v)
+            y = r * np.sin(u)*np.sin(v)
+            z = r * np.cos(v)
+            x += coordinates.Cartesian.earth[0]
+            y += coordinates.Cartesian.earth[1]
+            z += coordinates.Cartesian.earth[2]
+            ax.plot_surface(x, y, z, color=tuple(np.random.rand(3)))
+    

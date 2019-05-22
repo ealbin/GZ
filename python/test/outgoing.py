@@ -142,3 +142,72 @@ def plot(filelist):
     ax.set_zlabel('z')
     ax.view_init(azim=phi-90, elev=0)
     
+    
+def accuracy(Z=92, E=2e18, beta=[0,1,0], divisor1=1e2, divisor2=1e3, divisor3=1e4):    
+    position = gz.coordinates.Cartesian.earth
+    beta = np.asarray(beta)
+    beta = beta / np.sqrt(np.dot(beta,beta))
+    
+    out1 = gz.path.Outgoing(position, beta, Z, E, zigzag=True, save=False, max_step=.1)
+    out2 = gz.path.Outgoing(position, beta, Z, E, zigzag=True, save=False, max_step=.1)
+    out3 = gz.path.Outgoing(position, beta, Z, E, zigzag=True, save=False, max_step=.1)
+    
+    gz.path.Path.DOP853_DIVISOR = divisor1
+    start1 = time.time()
+    out1.propagate(B_override=[0,0,1e-4], algorithm='dop853')
+    elapsed1 = time.time() - start1    
+    
+    gz.path.Path.DOP853_DIVISOR = divisor2
+    start2 = time.time()
+    out2.propagate(B_override=[0,0,1e-4], algorithm='dop853')
+    elapsed2 = time.time() - start2
+    
+    gz.path.Path.DOP853_DIVISOR = divisor3
+    start3 = time.time()
+    out3.propagate(B_override=[0,0,1e-4], algorithm='dop853')
+    elapsed3 = time.time() - start3
+
+    x1 = [t[0] for t in out1.telemetry]
+    y1 = [t[1] for t in out1.telemetry]
+    
+    x2 = [t[0] for t in out2.telemetry]
+    y2 = [t[1] for t in out2.telemetry]
+    
+    x3 = [t[0] for t in out3.telemetry]
+    y3 = [t[1] for t in out3.telemetry]
+
+    if (plot):    
+        plt.figure(figsize=[8,8])
+        plt.plot(x1, y1, 'g')
+        plt.plot(x2, y2, 'm')
+        plt.plot(x3, y3, 'k')
+        plt.show()
+        
+        print('Out 1 elapsed: ' + str(elapsed1))
+        print('Out 2 elapsed: ' + str(elapsed2))
+        print('Out 3 elapsed: ' + str(elapsed3))
+        print()
+        
+        print('Out 1 distance: ' + str(out1.distance))
+        print('Out 2 distance: ' + str(out2.distance))
+        print('Out 3 distance: ' + str(out3.distance))
+        print()
+        
+        difference = out1.position - out2.position
+        difference = np.sqrt( np.dot(difference, difference) )
+        print('Difference 1-2 [AU]:     ' + str(difference))
+        difference *= gz.units.Change.AU_to_meter
+        print('Difference 1-2 [meters]: ' + str(difference))
+        print()
+        
+        difference = out1.position - out3.position
+        difference = np.sqrt( np.dot(difference, difference) )
+        print('Difference 1-3 [AU]:     ' + str(difference))
+        difference *= gz.units.Change.AU_to_meter
+        print('Difference 1-3 [meters]: ' + str(difference))
+        print()
+        
+        print('out1 steps: ' + str(len(out1.telemetry)))
+        print('out2 steps: ' + str(len(out2.telemetry)))
+        print('out3 steps: ' + str(len(out3.telemetry)))
+    

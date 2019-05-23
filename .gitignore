@@ -4,3 +4,4 @@
 *.swp
 *.Tesla
 /python/out_jobs/*
+/python/in_jobs/*

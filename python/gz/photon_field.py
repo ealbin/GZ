@@ -29,9 +29,9 @@ class Solar:
         scale = 7.8e7  
         r_dependence = 1. / distance_AU**2
         exponent = energy_eV / .5
-        if (exponent > 100.):
+        if (np.abs(exponent) > 100.):
             return 0.
-        e_dependence = energy_eV**2 / np.exp(exponent) - 1.
+        e_dependence = energy_eV**2 / ( np.exp(exponent) - 1. )
         return scale * r_dependence * e_dependence
 
 class CMB:
@@ -43,7 +43,7 @@ class CMB:
         scale = 1. / np.pi**2 # / (hbar c)**3
         kT = 1. # = kB * 2.725 K
         exponent = energy_eV / kT
-        if (exponent > 100.):
+        if (np.abs(exponent) > 100.):
             return 0.
-        e_dependence = energy_eV**2 / np.exp(exponent) - 1.
+        e_dependence = ( energy_eV**2 / np.exp(exponent) - 1. )
         return scale * e_dependence

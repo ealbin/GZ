@@ -326,14 +326,18 @@ class Earth:
                 max_dist = telemetry[-1][6]
                 length = len(telemetry)
                 for _ in range(length):
+                    if (_ == 0):
+                        dists.append(0.)
+                        probs.append(0.)
+                        continue
                     t = telemetry[length - _ - 1]
                     pos = t[:3]
                     bet = -1. * t[3:6]
                     dis = max_dist - t[6]
+                    step = np.abs(telemetry[length - _][6] - t[6])
                     atten = probability.Solar.attenuation(pos, bet, Z, E, mass_number=A)
-                    probs.append(probability.oneOrMore(atten, dis))
+                    probs.append(probability.oneOrMore(atten, step))
                     dists.append(dis)
-                
                 rand_dists, x, pdf, cdf = probability.random(dists, probs, runs, seed=seed, plottables=True, CDF=True)
                 bins = np.linspace(0., max_dist, 50)
                 if (plot):

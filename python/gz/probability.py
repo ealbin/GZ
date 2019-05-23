@@ -88,7 +88,6 @@ class Solar:
         """    
         density = photon_field.Solar.dNdE(dist_sun, photon_energy)
         x_section = cross_section(None, lorentz_gamma * geo_factor * photon_energy, mass_number=mass_number)
-        
         return density * x_section * geo_factor # [probability / centimeter * electronVolt]
 
     

@@ -46,4 +46,6 @@ def theta(e1, p1, e2, p2, e3, m3, e4, m4):
     cosTheta = ( e34 - (e12 - p12) - p3_mag**2 - p4_mag**2 ) / (2. * p3_mag * p4_mag)
     if (cosTheta > 1. and np.isclose(cosTheta, 1.)):
         cosTheta = 1.
+    if (cosTheta < -1. and np.isclose(cosTheta, -1.)):
+        cosTheta = -1.
     return np.arccos(cosTheta)

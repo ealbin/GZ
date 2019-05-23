@@ -158,7 +158,7 @@ class Outgoing(Path):
          
     def _add_telemetry(self):
         near_sun   = units.SI.radius_sun   * 10. * units.Change.meter_to_AU
-        near_earth = units.SI.radius_earth * 2.  * units.Change.meter_to_AU
+        near_earth = units.SI.radius_earth * 10. * units.Change.meter_to_AU
         
         if (self.dist_sun < near_sun or self.dist_earth < near_earth
             or self.distance - self.last_save >= self.save_distance):
@@ -210,7 +210,7 @@ class Outgoing(Path):
             Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm) 
             self._set_B(B_override=B_override)
             self._add_telemetry()
-            if (step_override is not None):
+            if (step_override is None):
                 self._set_stepsize()
         self.elapsed_sec = time.time() - start
         
@@ -220,7 +220,7 @@ class Outgoing(Path):
         if (self.save):
             self.algorithm = algorithm
             self.save_telemetry()
-        
+  
     def save_telemetry(self):
         if (self.save_path is None):
             self.save_path = Outgoing.DEFAULT_SAVE_PATH
@@ -290,14 +290,19 @@ class Incoming(Outgoing):
         else:
             Path.__init__(self, position, beta, Z, E, max_step=max_step)
         
-        self.origin = origin
+        self.origin = np.asarray(origin)
         self.decay_dist = decay_dist
-        self.A = A
         self.R_limit = R_limit
+        
+        if (A is None):
+            self.A = units.Nuclide.mass_number(Z)
+        else:
+            self.A = A
         
         self.telemetry = [np.concatenate([self.position, self.beta, [self.distance]])]
         self.last_save = self.distance
         self.save_distance = self.max_step / 10.
+        self.near_earth = False
         
         self.save = save
         self.save_path = save_path
@@ -308,9 +313,17 @@ class Incoming(Outgoing):
         Outgoing._add_telemetry(self)
             
     def _set_stepsize(self):
-        Path._set_stepsize(self)         
-        if (self.dist_earth - self.step < units.SI.radius_earth * units.Change.meter_to_AU):
-            self.step = self.dist_earth - units.SI.radius_earth * units.Change.meter_to_AU
+        if (self.near_earth or self.dist_earth <= self.max_step):
+            self.near_earth = True
+            if (self.dist_earth > self.max_step):
+                self.near_earth = False
+            self.save_distance = 10. * units.SI.radius_earth * units.Change.meter_to_AU
+            if (self.dist_earth - self.step < units.SI.radius_earth * units.Change.meter_to_AU):
+                self.step = self.dist_earth - units.SI.radius_earth * units.Change.meter_to_AU
+            else:
+                self.step = units.SI.radius_earth * units.Change.meter_to_AU / 2.    
+        else:
+            Path._set_stepsize(self)         
             
     def propagate(self, B_override=None, step_override=None, algorithm='dop853', seed=None):
         """
@@ -318,6 +331,9 @@ class Incoming(Outgoing):
         B_override: use this B instead of Bfield
         step_override: use this step instead of step()
         """
+        self.B_override = B_override
+        self.step_override = step_override
+
         Outgoing._set_B(self, B_override=B_override)
         
         if (step_override is not None):
@@ -327,6 +343,7 @@ class Incoming(Outgoing):
                 self.step_divisor = Path.EULER_DIVISOR
             elif (algorithm == 'dop853'):
                 self.step_divisor = Path.DOP853_DIVISOR
+            Path._set_stepsize(self)
             self._set_stepsize()        
         
         def remaining():
@@ -340,7 +357,7 @@ class Incoming(Outgoing):
             Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)  
             Outgoing._set_B(self, B_override=B_override)
             self._add_telemetry()
-            if (step_override is not None):
+            if (step_override is None):
                 self._set_stepsize()
         if (self.last_save < self.distance):
             self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))
@@ -380,7 +397,12 @@ class Incoming(Outgoing):
         # Angle between p3 and p4
         theta = relativity.theta(e1, p1, e2, p2, e3, m3, e4, m4)
         # Angle between p3 and p
-        theta3 = np.arccos( (p3_mag * p4_mag * np.cos(theta) + p3_mag**2) / (p3_mag * p_mag) )
+        cosTheta = (p3_mag * p4_mag * np.cos(theta) + p3_mag**2) / (p3_mag * p_mag)
+        if (cosTheta > 1. and np.isclose(cosTheta, 1.)):
+            cosTheta = 1.
+        if (cosTheta < -1. and np.isclose(cosTheta, -1.)):
+            cosTheta = -1.
+        theta3 = np.arccos(cosTheta)
         # Azimuthal angle around p
         phi3 = 2. * np.pi * np.random.random()
         
@@ -399,7 +421,7 @@ class Incoming(Outgoing):
         self.dn_path = Incoming(None, self.position, beta_4, Zdn, None, e4, None, max_step=self.max_step) # A-1 nucleus
 
         for subpath in [self.p_path, self.n_path, self.dp_path, self.dn_path]:
-            subpath.sub_propogate(B_override=B_override, step_override=step_override, algorithm=algorithm)
+            subpath.sub_propogate(B_override=B_override, step_override=None, algorithm=algorithm)
                         
         self.elapsed_sec = time.time() - start
             
@@ -410,6 +432,9 @@ class Incoming(Outgoing):
     # Sub-propogate children
     def sub_propogate(self, B_override=None, step_override=None, algorithm='dop853'):
 
+        self.B_override = B_override
+        self.step_override = step_override
+
         Outgoing._set_B(self, B_override=B_override)
         
         if (step_override is not None):
@@ -419,7 +444,8 @@ class Incoming(Outgoing):
                 self.step_divisor = Path.EULER_DIVISOR
             elif (algorithm == 'dop853'):
                 self.step_divisor = Path.DOP853_DIVISOR
-            self._set_stepsize()                
+            Path._set_stepsize(self)
+            self._set_stepsize()        
         
         dist_earth_init = self.dist_earth
         
@@ -432,6 +458,99 @@ class Incoming(Outgoing):
         while (keep_going()):
             Path.propagate(self, B_override=self.B, step_override=self.step, algorithm=algorithm)
             Outgoing._set_B(self, B_override=B_override)
-            self._add_telemetry()            
+            self._add_telemetry()  
+            if (step_override is None):
+                self._set_stepsize()            
         if (self.last_save < self.distance):
             self.telemetry.append(np.concatenate([self.position, self.beta, [self.distance]]))
+            
+            
+    def save_telemetry(self):
+        if (self.save_path is None):
+            self.save_path = Outgoing.DEFAULT_SAVE_PATH
+        
+        self.save_path = os.path.join(self.save_path, str(self.Z))   
+        if (not os.path.isdir(self.save_path)):
+            os.makedirs(self.save_path)
+        
+        if (self.filename is None):
+            self.filename  = str(np.abs(self.Z))
+            self.filename += '_'
+            self.filename += str(int(self.E / 1e18))
+    
+        test_name = self.filename
+        full_path = os.path.join(self.save_path, test_name + '.incoming')
+        _ = 1
+        while (os.path.exists(full_path)):
+            test_name = self.filename + '_' + str(_)
+            full_path = os.path.join(self.save_path, test_name + '.incoming')
+            _ += 1
+        self.filename = test_name + '.incoming'
+        
+        with open(os.path.join(self.save_path, self.filename), 'w') as f:
+            f.write('# Incoming propagation: ' + __version__ + '\n')
+            f.write('# Time of writing: ' + str(datetime.datetime.now()) + '\n')        
+            f.write('# Run time [sec]: ' + str(self.elapsed_sec) + '\n')
+            f.write('#\n')
+            f.write('# Platform\n')
+            uname = platform.uname()
+            f.write('# Node=' + uname.node + '\n')
+            f.write('# Machine=' + uname.machine + '\n')
+            f.write('# System=' + uname.system + '\n')
+            f.write('# Version=' + uname.version + '\n')
+            f.write('# Release=' + uname.release + '\n')
+            f.write('# Processor=' + uname.processor + '\n')
+            f.write('#\n')
+            f.write('# Parameters\n')
+            f.write('# Z=' + str(np.abs(self.Z)) + ' [proton number]\n')
+            f.write('# A=' + str(self.A) + ' [atomic mass units]\n')
+            f.write('# E=' + str(self.E) + ' [electron volts]\n')
+            f.write('# Origin=' + str(self.origin) + ' [AU]\n')
+            f.write('# Decay_Dist=' + str(self.decay_dist) + ' [AU]\n')
+            f.write('# Algorithm=' + self.algorithm + '\n')
+            f.write('# Max_Step=' + str(self.max_step) + ' [AU]\n')
+            f.write('# R_Limit=' + str(self.R_limit) + ' [AU]\n')
+            B_str = str(self.B_override)
+            if (self.B_override is not None):
+                B_str = str(self.B_override[0]) + ' ' + str(self.B_override[1]) + ' ' + str(self.B_override[2])
+            f.write('# B_Override=' + B_str + ' [T]\n')
+            f.write('# Step_Override=' + str(self.step_override) + '\n')
+            f.write('#\n')
+            f.write('# Key\n')
+            f.write('# position_x, position_y, position_z, beta_x, beta_y, beta_z, path_distance\n')
+            f.write('# units: positions=AU, beta=unitless, distance=AU\n')
+            f.write('#\n')
+                    
+            f.write('# Start Telemetry\n')
+            for _ in self.telemetry:
+                for val in _:
+                    f.write(str(val) + ' ')
+                f.write('\n')
+            f.write('#\n')
+                    
+            f.write('# Proton Telemetry\n')
+            for _ in self.p_path.telemetry:
+                for val in _:
+                    f.write(str(val) + ' ')
+                f.write('\n')
+            f.write('#\n')
+                    
+            f.write('# Z-1 Daughter Telemetry\n')
+            for _ in self.dp_path.telemetry:
+                for val in _:
+                    f.write(str(val) + ' ')                    
+                f.write('\n')
+            f.write('#\n')
+
+            f.write('# Neutron Telemetry\n')
+            for _ in self.n_path.telemetry:
+                for val in _:
+                    f.write(str(val) + ' ')
+                f.write('\n')
+            f.write('#\n')
+                    
+            f.write('# Z Daughter Telemetry\n')
+            for _ in self.dn_path.telemetry:
+                for val in _:
+                    f.write(str(val) + ' ')                    
+                f.write('\n')

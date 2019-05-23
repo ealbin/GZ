@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 from . import coordinates
+from . import probability
 from . import units
 
 class Patch:
@@ -48,6 +49,7 @@ class Patch:
 class Earth:
     
     OUT_JOB_PATH = './out_jobs'
+    IN_JOB_PATH  = './in_jobs'
     
     def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 20e18, 200e18], runs=1000):
         earth = Earth()
@@ -99,7 +101,7 @@ class Earth:
  
     def outgoing_jobs(self, Z, E, max_step=.01, A=None, R_limit=None, runs=100, cone=90., 
                       seed=None, out_path=None, job_path=None, name_header=None, name_tail=None,
-                      B_override=None):
+                      B_override=None, step_override=None, algorithm='dop853'):
         if (seed is not None):
             np.random.seed(seed)
         
@@ -163,8 +165,11 @@ class Earth:
                 f.write('# Z=' + str(np.abs(Z)) + ' [proton number]\n')
                 f.write('# A=' + str(A) + ' [atomic mass units]\n')
                 f.write('# E=' + str(E) + ' [electron volts]\n')
-                f.write('# Max_step=' + str(max_step) + ' [AU]\n')
-                f.write('# R_limit=' + str(R_limit) + ' [AU]\n')
+                f.write('# Max_Step=' + str(max_step) + ' [AU]\n')
+                f.write('# R_Limit=' + str(R_limit) + ' [AU]\n')
+                f.write('# B_Override=' + str(B_override) + ' [T]\n')
+                f.write('# Step_Override=' + str(step_override) + ' [AU]\n')
+                f.write('# Algorithm=' + str(algorithm) + '\n')
                 f.write('#\n')
                 f.write('# Script\n\n')
                 f.write('import gz\n\n')
@@ -201,17 +206,33 @@ class Earth:
                     args = ''
                     if (B_override is not None):
                         b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
-                        args = 'B_override=' + b_str                    
+                        args += 'B_override=' + b_str + ', '  
+                    if (step_override is not None):
+                        args += 'step_override=' + str(step_override) + ', '
+                    args += "algorithm='" + str(algorithm) + "'"
                     f.write('outgoing.propagate(' + args + ')\n\n')
       
         
-    def incoming_jobs(directory=None, filelist=None):
+    def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, 
+                      out_path=None, job_path=None, plot=False):
+
+        if (seed is not None):
+            np.random.seed(seed)
+        
+        if (job_path is None):
+            job_path = Earth.IN_JOB_PATH
+        
+        if (not os.path.isdir(job_path)):
+            os.makedirs(job_path)
 
         if (directory is not None):
             filelist = []
             for file in os.listdir(directory):
                 if (file.endswith('.outgoing')):
-                    filelist.append(file)
+                    filelist.append(os.path.join(directory, file))
+
+        if (plot):
+            plt.figure(figsize=[15,15])
 
         for file in filelist:
             with open(file, 'r') as f:
@@ -298,10 +319,89 @@ class Earth:
                 
                 origin = telemetry[0][:3]
                 position = telemetry[-1][:3]
-                beta = -1 * telemetry[-1][3:6]
+                beta = -1. * telemetry[-1][3:6]
                 
-                print('max step = ' + str(max_step))
-
-
-#    def __init__(self, origin, position, beta, Z, A, E, decay_dist, 
-#                 max_step=None, R_limit=6., save=True, save_path=None, filename=None):
+                dists = []
+                probs = []
+                max_dist = telemetry[-1][6]
+                length = len(telemetry)
+                for _ in range(length):
+                    t = telemetry[length - _ - 1]
+                    pos = t[:3]
+                    bet = -1. * t[3:6]
+                    dis = max_dist - t[6]
+                    atten = probability.Solar.attenuation(pos, bet, Z, E, mass_number=A)
+                    probs.append(probability.oneOrMore(atten, dis))
+                    dists.append(dis)
+                
+                rand_dists, x, pdf, cdf = probability.random(dists, probs, runs, seed=seed, plottables=True, CDF=True)
+                bins = np.linspace(0., max_dist, 50)
+                if (plot):
+                    color = tuple(np.random.random(3))
+                    plt.hist(rand_dists, bins=bins, log=True, density=True, color=color + (.3,))
+                    plt.plot(x, pdf, color=color)
+                    plt.xlim(x[0], x[-1])
+                    continue
+                                
+                filename = os.path.basename(file).rstrip('.outgoing') + '.py'                
+                with open(os.path.join(job_path, filename), 'w') as g:
+                    g.write('#!/usr/bin/env python3\n')
+                    g.write('#\n')
+                    g.write('# Incoming propagation job: ' + __version__ + '\n')
+                    g.write('# Time of writing: ' + str(datetime.datetime.now()) + '\n')        
+                    g.write('#\n')
+                    g.write('# Platform\n')
+                    uname = platform.uname()
+                    g.write('# Node=' + uname.node + '\n')
+                    g.write('# Machine=' + uname.machine + '\n')
+                    g.write('# System=' + uname.system + '\n')
+                    g.write('# Version=' + uname.version + '\n')
+                    g.write('# Release=' + uname.release + '\n')
+                    g.write('# Processor=' + uname.processor + '\n')
+                    g.write('#\n')
+                    g.write('# Setup\n')
+                    g.write('# Runs=' + str(runs) + '\n')
+                    g.write('# Seed=' + str(seed) + '\n')
+                    g.write('# Outgoing_File=' + str(file) + '\n')
+                    g.write('#\n')
+                    g.write('# Parameters\n')
+                    g.write('# Z=' + str(np.abs(Z)) + ' [proton number]\n')
+                    g.write('# A=' + str(A) + ' [atomic mass units]\n')
+                    g.write('# E=' + str(E) + ' [electron volts]\n')
+                    g.write('# Algorithm=' + str(algorithm) + '\n')
+                    g.write('# Max_Step=' + str(max_step) + ' [AU]\n')
+                    g.write('# R_Limit=' + str(R_limit) + ' [AU]\n')
+                    g.write('# B_Override=' + str(B_override) + ' [T]\n')
+                    g.write('# Step_Override=' + str(step_override) + ' [AU]\n')
+                    g.write('# Origin=' + str(origin) + ' [AU]\n')
+                    g.write('# Position=' + str(position) + ' [AU]\n')
+                    g.write('# Beta=' + str(beta) + '\n')
+                    g.write('#\n')
+                    g.write('# Script\n\n')
+                    g.write('import gz\n\n')
+                    
+                    for _, dist in enumerate(rand_dists):
+                        
+                        out_name = os.path.basename(filename).rstrip('.py') + '_{:04}'.format(_)
+                        
+                        args  = '[' + str(origin[0])   + ', ' + str(origin[1])   + ', ' + str(origin[2])   + '], '
+                        args += '[' + str(position[0]) + ', ' + str(position[1]) + ', ' + str(position[2]) + '], '
+                        args += '[' + str(beta[0])     + ', ' + str(beta[1])     + ', ' + str(beta[2])     + '], '
+                        args += str(Z) + ', '
+                        args += str(A) + ', '                        
+                        args += str(E) + ', '
+                        args += str(dist) + ', '
+                        args += 'max_step=' + str(max_step) + ', '
+                        if (R_limit is not None):
+                            args += 'R_limit=' + str(R_limit) + ', '
+                        args += 'save_path=' + str(out_path) + ', '
+                        args += 'filename=' + "'" + out_name + "'"
+                        g.write('incoming = gz.path.Incoming(' + args + ')\n') 
+                        args = ''
+                        if (B_override is not None):
+                            b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
+                            args += 'B_override=' + b_str + ', '  
+                        if (step_override is not None):
+                            args += 'step_override=' + str(step_override) + ', '
+                        args += "algorithm='" + str(algorithm) + "'"
+                        g.write('incoming.propagate(' + args + ')\n\n')                

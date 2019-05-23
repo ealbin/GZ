@@ -31,6 +31,51 @@ def oneOrMore(atten_length, distance):
     return 1. - p0
 
 
+def random(x, pdf, size, seed=None, plottables=False, CDF=False):
+    x = np.asarray(x)
+    pdf = np.asarray(pdf)
+
+    cdf = np.zeros(x.size)
+    for i in range(x.size):
+        if (i == 0):
+            continue
+        cdf[i-1] = integrate.simps(pdf[:i], x=x[:i])
+    cdf[-1] = cdf[-2]
+    
+    if (seed is not None):
+        np.random.seed(seed)
+    val = (cdf[-1] - cdf[0]) * np.random.random(size) + cdf[0]
+
+    out = []
+    for v in val:
+        for i, c in enumerate(cdf):
+            if (c < v):
+                continue
+            if (c == v):
+                out.append(x)
+                break
+            c1 = cdf[i-1]
+            c2 = c
+            x1 = x[i-1]
+            x2 = x[i]
+            slope = (x2 - x1) / (c2 - c1)
+            out.append(slope * (v - c1) + x1)
+            break
+    
+    if (size == 1):
+        out = out[0]
+        
+    if (plottables):
+        if (CDF):
+            out = out, x, pdf / cdf[-1], cdf
+        else:
+            out = out, x, pdf / cdf[-1]
+    elif (CDF):
+        out = out, x, cdf
+        
+    return out    
+
+
 class Solar:    
 
     ENERGY_LOW_EXPONENT  = -15.
@@ -71,8 +116,13 @@ class Solar:
         dist_sun = np.sqrt( np.dot(position, position) )
         r_hat = position / dist_sun
         beta = beta / np.sqrt( np.dot(beta, beta) )
-    
-        alpha_radians = np.arccos( np.dot( -r_hat, beta) )
+
+        dot = np.dot( -r_hat, beta)
+        if (dot > 1. and np.isclose(dot, 1.)):
+            dot = 1.        
+        if (dot < -1. and np.isclose(dot, -1.)):
+            dot = -1.            
+        alpha_radians = np.arccos(dot)
         geo_factor = 2. * np.cos(alpha_radians / 2.)**2
         
         # Analytical limits of integration are 0 to infinity [electronVolts], however the solar blackbody
@@ -116,7 +166,12 @@ class Solar:
         r_hat = position / dist_sun
         beta = beta / np.sqrt( np.dot(beta, beta) )
     
-        alpha_radians = np.arccos( np.dot( -r_hat, beta) )
+        dot = np.dot( -r_hat, beta)
+        if (dot > 1. and np.isclose(dot, 1.)):
+            dot = 1.        
+        if (dot < -1. and np.isclose(dot, -1.)):
+            dot = -1.        
+        alpha_radians = np.arccos(dot)
         geo_factor = 2. * np.cos(alpha_radians / 2.)**2
         
         e_samples = np.logspace(Solar.ENERGY_LOW_EXPONENT, Solar.ENERGY_HIGH_EXPONENT, Solar.ENERGY_SAMPLES) 
@@ -124,46 +179,4 @@ class Solar:
         for i, e in enumerate(e_samples):
             i_samples[i] = Solar.integrand(e, lorentz_gamma, mass_number, dist_sun, geo_factor, cross_section) 
 
-        cdf = np.zeros(e_samples.size)
-        for i in range(e_samples.size):
-            if (i == 0):
-                continue
-            cdf[i-1] = integrate.simps(i_samples[:i], x=e_samples[:i])
-            # [probability / centimeter]
-        cdf[-1] = cdf[-2]
-        
-        if (seed is not None):
-            np.random.seed(seed)
-        val = (cdf[-1] - cdf[0]) * np.random.random(size) + cdf[0]
-
-        out = []
-        for v in val:
-            for i, ec in enumerate(zip(e_samples, cdf)):
-                e = ec[0]
-                c = ec[1]
-                if (c < v):
-                    continue
-                if (c == v):
-                    out.append(e)
-                    break
-                c1 = cdf[i-1]
-                c2 = c
-                e1 = e_samples[i-1]
-                e2 = e
-                slope = (e2 - e1) / (c2 - c1)
-                out.append(slope * (v - c1) + e1)
-                break
-        
-        if (size == 1):
-            out = out[0]
-            
-        if (plottables):
-            if (CDF):
-                out = out, e_samples, i_samples / cdf[-1], cdf
-            else:
-                out = out, e_samples, i_samples / cdf[-1]
-        elif (CDF):
-            out = out, e_samples, cdf
-            
-        return out
-            
+        return random(e_samples, i_samples, size, seed=seed, plottables=plottables, CDF=CDF)

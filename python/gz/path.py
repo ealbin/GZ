@@ -450,7 +450,7 @@ class Incoming(Outgoing):
         dist_earth_init = self.dist_earth
         
         def keep_going():
-            if (self.dist_earth > units.SI.radius_earth * units.Change.meter_to_AU
+            if (self.dist_earth > (1. + 1e-6) * units.SI.radius_earth * units.Change.meter_to_AU
                 and self.distance < dist_earth_init + Outgoing.LIMIT_BUFFER):
                 return True
             return False

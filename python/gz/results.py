@@ -29,7 +29,7 @@ class Result:
         self.full_telemetry = full_telemetry
         
         tokens = self.filename.split('_')
-        if (not tokens[0].isdecimal()):
+        if (tokens[0][0].isalpha()):
             self.theta_mid = int(tokens[1])
             self.phi_mid = int(tokens[2])
         else:
@@ -114,7 +114,7 @@ class Result:
         
         pos = telemetry[:3] - coordinates.Cartesian.earth
         ro = np.sqrt(np.dot(pos, pos)) / (units.SI.radius_earth * units.Change.meter_to_AU)
-        if (ro > 1.):
+        if (ro > Re):
             sign = -1.
         else:
             sign = 1.
@@ -127,48 +127,38 @@ class Result:
         if (ratical < 0.):
             return telemetry[:3]
         
-        d = sign * np.dot(pos, beta) + np.sqrt(ratical)
+        d = sign * ( np.dot(pos, beta) + np.sqrt(ratical) )
         fixed = pos - (beta * d) 
         fixed = fixed * units.SI.radius_earth * units.Change.meter_to_AU
         fixed = fixed + coordinates.Cartesian.earth
         return fixed
             
     def findLastPos(self):
-        p_dist  = self.getEarthRadii(self.p_telemetry[-1])
-        dp_dist = self.getEarthRadii(self.dp_telemetry[-1])
-        n_dist  = self.getEarthRadii(self.n_telemetry[-1])
-        dn_dist = self.getEarthRadii(self.dn_telemetry[-1])
+        self.p_last  = self.fix(self.p_telemetry[-1])
+        self.dp_last = self.fix(self.dp_telemetry[-1])
+        self.n_last  = self.fix(self.n_telemetry[-1])
+        self.dn_last = self.fix(self.dn_telemetry[-1]) 
+        return
         
-        if (p_dist < 1.):
-            self.p_last = self.fix(self.p_telemetry[-1])
-        else:
-            self.p_last = self.p_telemetry[-1][:3]
-            
-        if (dp_dist < 1.):
-            self.dp_last = self.fix(self.dp_telemetry[-1])
-        else:
-            self.dp_last = self.dp_telemetry[-1][:3]
-            
-        if (n_dist < 1.):
-            self.n_last = self.fix(self.n_telemetry[-1])
-        else:
-            self.n_last = self.n_telemetry[-1][:3]
-            
-        if (dn_dist < 1.):
-            self.dn_last = self.fix(self.dn_telemetry[-1])
-        else:
-            self.dn_last = self.dn_telemetry[-1][:3]
             
 
 class Results:
     
-    def __init__(self, directory=None, filelist=None, full_telemetry=False):
+    def __init__(self, directory=None, filelist=None, full_telemetry=False, cone=None):
 
         if (directory is not None):
             filelist = []
             for file in os.listdir(directory):
                 if (file.endswith('.incoming')):
-                    filelist.append(os.path.join(directory, file))
+                    if (cone is not None):
+                        tokens = file.split('_')
+                        if (tokens[0][0].isalpha()):
+                            tokens = tokens[1:]
+                        theta = float(tokens[4])
+                        if (theta < cone):
+                            filelist.append(os.path.join(directory, file))
+                    else:
+                        filelist.append(os.path.join(directory, file))
 
         self.directory = directory
         self.filelist = filelist 
@@ -409,6 +399,45 @@ class Results:
         print('Neutron both:   ' + str(n_both) + ', ' + str(n_both / len(self.results) * 100.) + '%')
         print('One, not both:  ' + str(n_solo) + ', ' + str(n_solo / len(self.results) * 100.) + '%')
                 
+        fig0 = plt.figure(figsize=[15,15])
+        print()
+        p_neither = ~p_dp_both
+        n_neither = ~n_dn_both
+        print('Neither (proton): ')
+        for r in np.asarray(self.results)[p_neither]:
+            p = r.getEarthRadii(r.p_telemetry[-1])
+            pl = r.getEarthRadii(r.p_last)
+            dp = r.getEarthRadii(r.dp_telemetry[-1])
+            dpl = r.getEarthRadii(r.dp_last)
+            print('\t' + r.filename + ': ')
+            print('\t\t' + str(p)  + ' => ' + str(pl))
+            print('\t\t' + str(dp) + ' => ' + str(dpl))
+            pos_p = []
+            pos_dp = []
+            for t in zip(r.p_telemetry, r.dp_telemetry):
+                pos_p.append(r.getEarthRadii(t[0]))
+                pos_dp.append(r.getEarthRadii(t[1]))
+            plt.plot(pos_p)
+            plt.plot(pos_dp)
+        print()
+        print('Neither (neutron): ')
+        for r in np.asarray(self.results)[n_neither]:
+            n = r.getEarthRadii(r.n_telemetry[-1])
+            nl = r.getEarthRadii(r.n_last)
+            dn = r.getEarthRadii(r.dn_telemetry[-1])
+            dnl = r.getEarthRadii(r.dn_last)
+            print('\t' + r.filename + ': ')
+            print('\t\t' + str(n)  + ' => ' + str(nl))
+            print('\t\t' + str(dn) + ' => ' + str(dnl))
+            pos_n = []
+            pos_dn = []
+            for t in zip(r.n_telemetry, r.dn_telemetry):
+                pos_n.append(r.getEarthRadii(t[0]))
+                pos_dn.append(r.getEarthRadii(t[1]))
+            plt.plot(pos_n)
+            plt.plot(pos_dn)
+        plt.xlim(.9,1.1)
+        
         fig1 = plt.figure(figsize=[15,15])
         bins = np.linspace(0., 1 + 100 * atol, 100)
         plt.hist(p_list,  bins=bins, density=True, log=True, color=mpl.colors.to_rgba('b',.3), label='Proton')

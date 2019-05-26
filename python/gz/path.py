@@ -505,7 +505,7 @@ class Incoming(Outgoing):
             f.write('# Z=' + str(np.abs(self.Z)) + ' [proton number]\n')
             f.write('# A=' + str(self.A) + ' [atomic mass units]\n')
             f.write('# E=' + str(self.E) + ' [electron volts]\n')
-            f.write('# Origin=' + str(self.origin) + ' [AU]\n')
+            f.write('# Origin=' + str(self.origin[0]) + ' ' + str(self.origin[1]) + ' ' + str(self.origin[2]) + ' [AU]\n')
             f.write('# Decay_Dist=' + str(self.decay_dist) + ' [AU]\n')
             f.write('# Algorithm=' + self.algorithm + '\n')
             f.write('# Max_Step=' + str(self.max_step) + ' [AU]\n')

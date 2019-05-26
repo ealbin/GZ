@@ -55,7 +55,7 @@ class Earth:
         earth = Earth()
         for z in Zlist:
             for e in Elist:
-                earth.outgoing_jobs(z, e, max_step=.01, runs=runs, cone=90.)
+                earth.outgoing_jobs(z, e, max_step=.01, runs=runs, cone=90.) #cone=30., B_override=[0,0,0], name_header='nofield30')
     
     def __init__(self, wedges=4, bands=3):
         self.wedges = wedges
@@ -214,7 +214,7 @@ class Earth:
       
         
     def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, 
-                      out_path=None, job_path=None, plot=False):
+                      out_path=None, job_path=None, plot=False, histograms=True):
 
         if (seed is not None):
             np.random.seed(seed)
@@ -234,6 +234,7 @@ class Earth:
         if (plot):
             plt.figure(figsize=[15,15])
 
+        total_probability = 0.
         for file in filelist:
             with open(file, 'r') as f:
                 Z = None
@@ -339,12 +340,15 @@ class Earth:
                     probs.append(probability.oneOrMore(atten, step))
                     dists.append(dis)
                 rand_dists, x, pdf, cdf = probability.random(dists, probs, runs, seed=seed, plottables=True, CDF=True)
+                total_probability += cdf[-1]
                 bins = np.linspace(0., max_dist, 50)
                 if (plot):
                     color = tuple(np.random.random(3))
-                    plt.hist(rand_dists, bins=bins, log=True, density=True, color=color + (.3,))
+                    if (histograms):
+                        plt.hist(rand_dists, bins=bins, log=True, density=True, color=color + (.3,))
                     plt.plot(x, pdf, color=color)
                     plt.xlim(x[0], x[-1])
+                    plt.yscale('log')
                     continue
                                 
                 filename = os.path.basename(file).rstrip('.outgoing') + '.py'                
@@ -380,10 +384,13 @@ class Earth:
                     g.write('# Origin=' + str(origin) + ' [AU]\n')
                     g.write('# Position=' + str(position) + ' [AU]\n')
                     g.write('# Beta=' + str(beta) + '\n')
+                    g.write('# CDF=' + str(cdf[-1]) + '\n')
                     g.write('#\n')
                     g.write('# Script\n\n')
                     g.write('import gz\n\n')
                     
+                    if (runs==1):
+                        rand_dists = [rand_dists]
                     for _, dist in enumerate(rand_dists):
                         
                         out_name = os.path.basename(filename).rstrip('.py') + '_{:04}'.format(_)
@@ -409,3 +416,5 @@ class Earth:
                             args += 'step_override=' + str(step_override) + ', '
                         args += "algorithm='" + str(algorithm) + "'"
                         g.write('incoming.propagate(' + args + ')\n\n')                
+
+        print('Average probability to disinitegrate: ' + str(total_probability / float(len(filelist))))

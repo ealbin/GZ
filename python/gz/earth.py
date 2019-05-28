@@ -52,10 +52,10 @@ class Earth:
     IN_JOB_PATH  = './in_jobs'
     
     def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 20e18, 200e18], runs=1000):
-        earth = Earth()
+        earth = Earth(wedges=wedges, bands=bands)
         for z in Zlist:
             for e in Elist:
-                earth.outgoing_jobs(z, e, max_step=.01, runs=runs, cone=90.) #cone=30., B_override=[0,0,0], name_header='nofield30')
+                earth.outgoing_jobs(z, e, max_step=.01, runs=runs)#, cone=90., B_override=[0,0,0], name_header='nofield100')
     
     def __init__(self, wedges=4, bands=3):
         self.wedges = wedges
@@ -213,7 +213,7 @@ class Earth:
                     f.write('outgoing.propagate(' + args + ')\n\n')
       
         
-    def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, 
+    def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, quick_dist=False,
                       out_path=None, job_path=None, plot=False, histograms=True):
 
         if (seed is not None):
@@ -322,34 +322,40 @@ class Earth:
                 position = telemetry[-1][:3]
                 beta = -1. * telemetry[-1][3:6]
                 
-                dists = []
-                probs = []
-                max_dist = telemetry[-1][6]
-                length = len(telemetry)
-                for _ in range(length):
-                    if (_ == 0):
-                        dists.append(0.)
-                        probs.append(0.)
+                if (quick_dist):
+                    cdf = [1.]
+                    rand_dists = telemetry[-1][6] * np.random.random(runs)
+                    if (runs == 1):
+                        rand_dists = rand_dists[0]
+                else:
+                    dists = []
+                    probs = []
+                    max_dist = telemetry[-1][6]
+                    length = len(telemetry)
+                    for _ in range(length):
+                        if (_ == 0):
+                            dists.append(0.)
+                            probs.append(0.)
+                            continue
+                        t = telemetry[length - _ - 1]
+                        pos = t[:3]
+                        bet = -1. * t[3:6]
+                        dis = max_dist - t[6]
+                        step = np.abs(telemetry[length - _][6] - t[6])
+                        atten = probability.Solar.attenuation(pos, bet, Z, E, mass_number=A)
+                        probs.append(probability.oneOrMore(atten, step))
+                        dists.append(dis)
+                    rand_dists, x, pdf, cdf = probability.random(dists, probs, runs, seed=seed, plottables=True, CDF=True)
+                    total_probability += cdf[-1]
+                    bins = np.linspace(0., max_dist, 50)
+                    if (plot):
+                        color = tuple(np.random.random(3))
+                        if (histograms):
+                            plt.hist(rand_dists, bins=bins, log=True, density=True, color=color + (.3,))
+                        plt.plot(x, pdf, color=color)
+                        plt.xlim(x[0], x[-1])
+                        plt.yscale('log')
                         continue
-                    t = telemetry[length - _ - 1]
-                    pos = t[:3]
-                    bet = -1. * t[3:6]
-                    dis = max_dist - t[6]
-                    step = np.abs(telemetry[length - _][6] - t[6])
-                    atten = probability.Solar.attenuation(pos, bet, Z, E, mass_number=A)
-                    probs.append(probability.oneOrMore(atten, step))
-                    dists.append(dis)
-                rand_dists, x, pdf, cdf = probability.random(dists, probs, runs, seed=seed, plottables=True, CDF=True)
-                total_probability += cdf[-1]
-                bins = np.linspace(0., max_dist, 50)
-                if (plot):
-                    color = tuple(np.random.random(3))
-                    if (histograms):
-                        plt.hist(rand_dists, bins=bins, log=True, density=True, color=color + (.3,))
-                    plt.plot(x, pdf, color=color)
-                    plt.xlim(x[0], x[-1])
-                    plt.yscale('log')
-                    continue
                                 
                 filename = os.path.basename(file).rstrip('.outgoing') + '.py'                
                 with open(os.path.join(job_path, filename), 'w') as g:
@@ -389,7 +395,7 @@ class Earth:
                     g.write('# Script\n\n')
                     g.write('import gz\n\n')
                     
-                    if (runs==1):
+                    if (runs == 1):
                         rand_dists = [rand_dists]
                     for _, dist in enumerate(rand_dists):
                         

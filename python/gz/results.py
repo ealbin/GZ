@@ -389,63 +389,70 @@ class Results:
         p_xor_dp = (p_near * ~dp_near) + (~p_near * dp_near)
         n_xor_dn = (n_near * ~dn_near) + (~n_near * dn_near)
 
+        p_neither = ~(p_dp_both + p_xor_dp)
+        n_neither = ~(n_dn_both + n_xor_dn)
+        
         p_both = len(p_dp_both[p_dp_both])
         n_both = len(n_dn_both[n_dn_both])
         p_solo = len(p_xor_dp[p_xor_dp])
         n_solo = len(n_xor_dn[n_xor_dn])
+        p_none = len(p_neither[p_neither])
+        n_none = len(n_neither[n_neither])
         print('N sims: ' + str(len(self.results)))
         print('Proton both:    ' + str(p_both) + ', ' + str(p_both / len(self.results) * 100.) + '%')
         print('One, not both:  ' + str(p_solo) + ', ' + str(p_solo / len(self.results) * 100.) + '%')
+        print('Proton none:    ' + str(p_none) + ', ' + str(p_none / len(self.results) * 100.) + '%')
+        print()
         print('Neutron both:   ' + str(n_both) + ', ' + str(n_both / len(self.results) * 100.) + '%')
         print('One, not both:  ' + str(n_solo) + ', ' + str(n_solo / len(self.results) * 100.) + '%')
-                
-        fig0 = plt.figure(figsize=[15,15])
-        print()
-        p_neither = ~p_dp_both
-        n_neither = ~n_dn_both
-        print('Neither (proton): ')
-        for r in np.asarray(self.results)[p_neither]:
-            p = r.getEarthRadii(r.p_telemetry[-1])
-            pl = r.getEarthRadii(r.p_last)
-            dp = r.getEarthRadii(r.dp_telemetry[-1])
-            dpl = r.getEarthRadii(r.dp_last)
-            print('\t' + r.filename + ': ')
-            print('\t\t' + str(p)  + ' => ' + str(pl))
-            print('\t\t' + str(dp) + ' => ' + str(dpl))
-            pos_p = []
-            pos_dp = []
-            for t in zip(r.p_telemetry, r.dp_telemetry):
-                pos_p.append(r.getEarthRadii(t[0]))
-                pos_dp.append(r.getEarthRadii(t[1]))
-            plt.plot(pos_p)
-            plt.plot(pos_dp)
-        print()
-        print('Neither (neutron): ')
-        for r in np.asarray(self.results)[n_neither]:
-            n = r.getEarthRadii(r.n_telemetry[-1])
-            nl = r.getEarthRadii(r.n_last)
-            dn = r.getEarthRadii(r.dn_telemetry[-1])
-            dnl = r.getEarthRadii(r.dn_last)
-            print('\t' + r.filename + ': ')
-            print('\t\t' + str(n)  + ' => ' + str(nl))
-            print('\t\t' + str(dn) + ' => ' + str(dnl))
-            pos_n = []
-            pos_dn = []
-            for t in zip(r.n_telemetry, r.dn_telemetry):
-                pos_n.append(r.getEarthRadii(t[0]))
-                pos_dn.append(r.getEarthRadii(t[1]))
-            plt.plot(pos_n)
-            plt.plot(pos_dn)
-        plt.xlim(.9,1.1)
+        print('Neutron none:   ' + str(n_none) + ', ' + str(n_none / len(self.results) * 100.) + '%')
+
+        if (len(np.asarray(self.results)[p_neither])>0 or len(np.asarray(self.results)[n_neither])>0):                
+            fig0 = plt.figure(figsize=[15,15])
+            print()
+            print('Neither (proton): ')
+            for r in np.asarray(self.results)[p_neither]:
+                p = r.getEarthRadii(r.p_telemetry[-1])
+                pl = r.getEarthRadii(r.p_last)
+                dp = r.getEarthRadii(r.dp_telemetry[-1])
+                dpl = r.getEarthRadii(r.dp_last)
+                print('\t' + r.filename + ': ')
+                print('\t\t' + str(p)  + ' => ' + str(pl))
+                print('\t\t' + str(dp) + ' => ' + str(dpl))
+                pos_p = []
+                pos_dp = []
+                for t in zip(r.p_telemetry, r.dp_telemetry):
+                    pos_p.append(r.getEarthRadii(t[0]))
+                    pos_dp.append(r.getEarthRadii(t[1]))
+                plt.plot(pos_p)
+                plt.plot(pos_dp)
+            print()
+            print('Neither (neutron): ')
+            for r in np.asarray(self.results)[n_neither]:
+                n = r.getEarthRadii(r.n_telemetry[-1])
+                nl = r.getEarthRadii(r.n_last)
+                dn = r.getEarthRadii(r.dn_telemetry[-1])
+                dnl = r.getEarthRadii(r.dn_last)
+                print('\t' + r.filename + ': ')
+                print('\t\t' + str(n)  + ' => ' + str(nl))
+                print('\t\t' + str(dn) + ' => ' + str(dnl))
+                pos_n = []
+                pos_dn = []
+                for t in zip(r.n_telemetry, r.dn_telemetry):
+                    pos_n.append(r.getEarthRadii(t[0]))
+                    pos_dn.append(r.getEarthRadii(t[1]))
+                plt.plot(pos_n)
+                plt.plot(pos_dn)
+            plt.xlim(.9,1.1)
         
-        fig1 = plt.figure(figsize=[15,15])
-        bins = np.linspace(0., 1 + 100 * atol, 100)
-        plt.hist(p_list,  bins=bins, density=True, log=True, color=mpl.colors.to_rgba('b',.3), label='Proton')
-        plt.hist(dp_list, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('m',.3), label='Z-1 Daughter')
-        plt.hist(n_list,  bins=bins, density=True, log=True, color=mpl.colors.to_rgba('r',.3), label='Neutron')
-        plt.hist(dn_list, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('y',.3), label='Z Daughter')
-        plt.legend()
-        plt.show()
+        #fig1 = plt.figure(figsize=[15,15])
+        #bins = np.linspace(0., 1 + 100 * atol, 100)
+        #plt.hist(p_list,  bins=bins, density=True, log=True, color=mpl.colors.to_rgba('b',.3), label='Proton')
+        #plt.hist(dp_list, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('m',.3), label='Z-1 Daughter')
+        #plt.hist(n_list,  bins=bins, density=True, log=True, color=mpl.colors.to_rgba('r',.3), label='Neutron')
+        #plt.hist(dn_list, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('y',.3), label='Z Daughter')
+        #plt.legend()
+        #plt.show()
         
         p_dp_dist = []
         for pair in np.asarray(self.results)[p_dp_both]:
@@ -459,9 +466,29 @@ class Results:
         n_dn_dist = np.asarray(n_dn_dist) * units.SI.radius_earth
         
         fig2 = plt.figure(figsize=[15,15])
-        bins = np.logspace(-10,10,1000)
-        plt.hist(p_dp_dist, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('b',.3), label='proton-daughter')
-        plt.hist(n_dn_dist, bins=bins, density=True, log=True, color=mpl.colors.to_rgba('r',.3), label='neutron-daughter')
+        dist = np.concatenate([p_dp_dist, n_dn_dist])
+        n_under1 = len(dist[dist<1.])
+        n_under10 = len(dist[dist<10.])
+        n_under50 = len(dist[dist<50.])        
+        print()
+        print('Fraction under 1 m:  ' + str(n_under1/len(dist)*100.))
+        print('Fraction under 10 m: ' + str(n_under10/len(dist)*100.))
+        print('Fraction under 50 m: ' + str(n_under50/len(dist)*100.))
+        non_zero = dist[dist > 0.]
+        lo_x = np.log10(min(non_zero) / 100.)
+        np.place(dist, dist==0., lo_x)
+        hi_x = np.log10(max(dist) * 10.)
+        bins = np.logspace(lo_x, hi_x, 100)
+        n1, b, p = plt.hist(p_dp_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('b',.3), label='proton-daughter')
+        n2, b, p = plt.hist(n_dn_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('r',.3), label='neutron-daughter')
+        n = np.concatenate((n1[n1>0], n2[n2>0]))
+        lo = np.min(n) / 2.
+        hi = np.max(n) * 2.
+        plt.plot([1e0,1e0],[lo, hi],'k')
+        plt.plot([1e1,1e1],[lo, hi],'k--')
+        plt.plot([1e2,1e2],[lo, hi],'k.')
         plt.xscale('log')
+        plt.xlim(bins[0], bins[-1])
+        plt.ylim(lo, hi)
         plt.legend()
         plt.show()

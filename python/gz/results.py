@@ -110,28 +110,42 @@ class Result:
         return (p_dist, dp_dist, n_dist, dn_dist)
 
     def fix(self, telemetry):
-        Re = 1.
+        Re = units.SI.radius_earth * units.Change.meter_to_AU
         
-        pos = telemetry[:3] - coordinates.Cartesian.earth
-        ro = np.sqrt(np.dot(pos, pos)) / (units.SI.radius_earth * units.Change.meter_to_AU)
-        if (ro > Re):
-            sign = -1.
-        else:
-            sign = 1.
-        pos = ro * pos / np.sqrt(np.dot(pos, pos))
-        
-        beta = telemetry[3:6]
-        beta = beta / np.sqrt(np.dot(beta, beta))
-        
-        ratical = Re*Re - ro*ro + np.dot(pos, beta)**2
-        if (ratical < 0.):
+        pvec = telemetry[:3] - coordinates.Cartesian.earth
+        pmag = np.sqrt(np.dot(pvec, pvec))
+        phat = pvec / pmag
+        if (pmag == Re):
             return telemetry[:3]
         
-        d = sign * ( np.dot(pos, beta) + np.sqrt(ratical) )
-        fixed = pos - (beta * d) 
-        fixed = fixed * units.SI.radius_earth * units.Change.meter_to_AU
-        fixed = fixed + coordinates.Cartesian.earth
-        return fixed
+        bhat = telemetry[3:6]
+        bhat = bhat / np.sqrt(np.dot(bhat,bhat))
+        
+        cosTheta = np.dot(phat, bhat)
+        discriminant = Re*Re - pmag*pmag * (1. - cosTheta*cosTheta)    
+        if (discriminant < 0.):
+            return telemetry[:3]
+        
+        cplus  = -1. * pmag * cosTheta + np.sqrt(discriminant)
+        cminus = -1. * pmag * cosTheta - np.sqrt(discriminant)
+        c = np.asarray([cplus, cminus])
+        
+        if (pmag > Re):
+            if (cosTheta > 0.):
+                c = c[c < 0.]
+                c = -1. * np.min(np.abs(c))                
+            else:
+                c = c[c > 0.]
+                c = np.min(c)
+        else:
+            c = c[c < 0.]
+            if (cosTheta > 0.):
+                c = -1. * np.max(np.abs(c))
+            else:
+                c = -1. * np.min(np.abs(c))
+        
+        pvec = (pvec + c * bhat) + coordinates.Cartesian.earth
+        return pvec
             
     def findLastPos(self):
         self.p_last  = self.fix(self.p_telemetry[-1])
@@ -365,7 +379,7 @@ class Results:
     
         return 2. * np.arcsin( np.sqrt(part1 + part2 * part3) )
 
-    def summerize(self, atol=1e-3):
+    def summerize(self, atol=1e-2):
         p_list  = []
         dp_list = []
         n_list  = []
@@ -406,6 +420,16 @@ class Results:
         print('Neutron both:   ' + str(n_both) + ', ' + str(n_both / len(self.results) * 100.) + '%')
         print('One, not both:  ' + str(n_solo) + ', ' + str(n_solo / len(self.results) * 100.) + '%')
         print('Neutron none:   ' + str(n_none) + ', ' + str(n_none / len(self.results) * 100.) + '%')
+
+        print()
+        print(np.asarray(p_list)[p_xor_dp])
+        print()
+        print(np.asarray(dp_list)[p_xor_dp])
+        print()
+        print(np.asarray(n_list)[n_xor_dn])
+        print()
+        print(np.asarray(dn_list)[n_xor_dn])
+        print()
 
         if (len(np.asarray(self.results)[p_neither])>0 or len(np.asarray(self.results)[n_neither])>0):                
             fig0 = plt.figure(figsize=[15,15])

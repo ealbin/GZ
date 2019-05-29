@@ -223,15 +223,17 @@ class Outgoing(Path):
   
     def save_telemetry(self):
         if (self.save_path is None):
-            self.save_path = Outgoing.DEFAULT_SAVE_PATH
-        
+           self.save_path = Outgoing.DEFAULT_SAVE_PATH
+            
+        subdir = str(np.abs(self.Z)) + '_' + str(int(self.E/1e15))
+        self.save_path = os.path.join(self.save_path, subdir)   
         if (not os.path.isdir(self.save_path)):
             os.makedirs(self.save_path)
         
         if (self.filename is None):
             self.filename  = str(np.abs(self.Z))
             self.filename += '_'
-            self.filename += str(int(self.E / 1e18))
+            self.filename += str(int(self.E / 1e15))
     
         test_name = self.filename
         full_path = os.path.join(self.save_path, test_name + '.outgoing')
@@ -240,7 +242,7 @@ class Outgoing(Path):
             test_name = self.filename + '_' + str(_)
             full_path = os.path.join(self.save_path, test_name + '.outgoing')
             _ += 1
-        self.filename = test_name + '.outgoing'
+        self.filename = test_name + '.outgoing'        
         
         with open(os.path.join(self.save_path, self.filename), 'w') as f:
             f.write('# Outgoing propagation: ' + __version__ + '\n')
@@ -318,10 +320,10 @@ class Incoming(Outgoing):
             if (self.dist_earth > self.max_step):
                 self.near_earth = False
             self.save_distance = 10. * units.SI.radius_earth * units.Change.meter_to_AU
-            if (self.dist_earth - self.step < units.SI.radius_earth * units.Change.meter_to_AU):
-                self.step = self.dist_earth - units.SI.radius_earth * units.Change.meter_to_AU
+            if (self.dist_earth > 2 * units.SI.radius_earth * units.Change.meter_to_AU):
+                self.step = units.SI.radius_earth * units.Change.meter_to_AU / 5.
             else:
-                self.step = units.SI.radius_earth * units.Change.meter_to_AU / 2.    
+                self.step = units.SI.radius_earth * units.Change.meter_to_AU / 50.
         else:
             Path._set_stepsize(self)         
             
@@ -450,7 +452,7 @@ class Incoming(Outgoing):
         dist_earth_init = self.dist_earth
         
         def keep_going():
-            if (self.dist_earth > (1. + 1e-6) * units.SI.radius_earth * units.Change.meter_to_AU
+            if (self.dist_earth > (1.01) * units.SI.radius_earth * units.Change.meter_to_AU
                 and self.distance < dist_earth_init + Outgoing.LIMIT_BUFFER):
                 return True
             return False
@@ -476,7 +478,7 @@ class Incoming(Outgoing):
         if (self.filename is None):
             self.filename  = str(np.abs(self.Z))
             self.filename += '_'
-            self.filename += str(int(self.E / 1e18))
+            self.filename += str(int(self.E / 1e15))
     
         test_name = self.filename
         full_path = os.path.join(self.save_path, test_name + '.incoming')

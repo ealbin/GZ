@@ -50,58 +50,19 @@ class Earth:
     
     OUT_JOB_PATH = './out_jobs'
     IN_JOB_PATH  = './in_jobs'
-    
-    def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 20e18, 200e18], runs=1000):
-        earth = Earth(wedges=wedges, bands=bands)
-        for z in Zlist:
-            for e in Elist:
-                earth.outgoing_jobs(z, e, max_step=.01, runs=runs)#, cone=90., B_override=[0,0,0], name_header='nofield100')
-    
-    def __init__(self, wedges=4, bands=3):
-        self.wedges = wedges
-        self.bands = bands
-        
-        self.phi_sep = 360. / wedges
-        self.theta_sep = 180. / bands
-        
-        self.phi_offset = self.phi_sep / 2.
-        self.theta_offset = 0.        
-        
-        self.patches = []
-        for w in range(wedges):
-            for b in range(bands):
-                phi_lo = self.phi_offset + w * self.phi_sep
-                phi_hi = phi_lo + self.phi_sep
-                theta_lo = self.theta_offset + b * self.theta_sep
-                theta_hi = theta_lo + self.theta_sep
-                self.patches.append(Patch(phi_lo, phi_hi, theta_lo, theta_hi))
 
+    def randomThetaPhi(size, theta_hi=180):
+        x = np.deg2rad( np.linspace(0, theta_hi, theta_hi + 1) )
+        pdf = np.sin(x)
+        theta = probability.random(x, pdf, size)
+        phi = 2. * np.pi * np.random.random(size)
+        return theta, phi
 
-    def draw(self, ax=None):
-        if (ax is None):
-            fig = plt.figure(figsize=[16,16])
-            ax = plt.axes(projection='3d')
-        
-        for patch in self.patches:      
-            phi_lo = patch.phi_lo * np.pi / 180.
-            phi_hi = patch.phi_hi * np.pi / 180.
-            theta_lo = patch.theta_lo * np.pi / 180.
-            theta_hi = patch.theta_hi * np.pi / 180.
-            
-            u, v = np.mgrid[phi_lo:phi_hi:10j, theta_lo:theta_hi:10j]
-            r = units.SI.radius_earth * units.Change.meter_to_AU
-            x = r * np.cos(u)*np.sin(v)
-            y = r * np.sin(u)*np.sin(v)
-            z = r * np.cos(v)
-            x += coordinates.Cartesian.earth[0]
-            y += coordinates.Cartesian.earth[1]
-            z += coordinates.Cartesian.earth[2]
-            ax.plot_surface(x, y, z, color=tuple(np.random.rand(3)))
-
- 
-    def outgoing_jobs(self, Z, E, max_step=.01, A=None, R_limit=None, runs=100, cone=90., 
-                      seed=None, out_path=None, job_path=None, name_header=None, name_tail=None,
-                      B_override=None, step_override=None, algorithm='dop853'):
+    def outgoing_batch(Zlist=[2, 8, 26, 92], 
+                      Elist=[1e15, 10e15, 100e15, 1_000e15, 10_000e15, 100_000e15], 
+                      max_step=.01, R_limit=None, runs=100_000, cone=90., 
+                      seed=None, out_path=None, job_path=None,
+                      B_override=None):
         if (seed is not None):
             np.random.seed(seed)
         
@@ -111,26 +72,39 @@ class Earth:
         if (not os.path.isdir(job_path)):
             os.makedirs(job_path)
         
-        for patch in self.patches:
-            p_mid = int(patch.phi_mid)
-            t_mid = int(patch.theta_mid)
+        eTheta, ePhi = Earth.randomThetaPhi(runs)
+        zTheta, zPhi = Earth.randomThetaPhi(runs, theta_hi=cone)
 
-            if (name_header is not None):
-                filename = name_header + '_'
-            else:
-                filename = ''
-            filename += str(t_mid) + '_' + str(p_mid)
-            
-            if (name_tail is not None):
-                filename += '_' + name_tail
-            else:
-                filename += '_' + str(Z) + '_' + str(int(E/1e18))    
-            filename += '.py'
+        zx = np.sin(eTheta) * np.cos(ePhi)
+        zy = np.sin(eTheta) * np.sin(ePhi)
+        zz = np.cos(eTheta)
+        zenith = np.asarray([zx, zy, zz]).T
 
-            position = coordinates.Cartesian.earth
-            position = position + patch.zenith * units.SI.radius_earth * units.Change.meter_to_AU
+        r  = np.cos(zTheta)
+        th = np.sin(zTheta) * np.cos(zPhi)
+        ph = np.sin(zTheta) * np.sin(zPhi)
+        beta = np.zeros((len(zTheta), 3))
+        for _ in range(len(zTheta)):
+            beta[_] = coordinates.Spherical.toCartesian([r[_], th[_], ph[_]], eTheta[_], ePhi[_])
 
-            with open(os.path.join(job_path, filename), 'w') as f:
+        Re = units.SI.radius_earth * units.Change.meter_to_AU
+        position = coordinates.Cartesian.earth + (Re * zenith)
+        
+        for run in range(runs):
+            filename = 'job{:06}'.format(run + 1)
+
+            eTh = eTheta[run]
+            ePh = ePhi[run]
+            zTh = zTheta[run]
+            zPh = zPhi[run]
+
+            pos = position[run]
+            bet = beta[run]
+
+            A = None
+            step_override = None
+            algorithm = 'dop853'
+            with open(os.path.join(job_path, filename + '.py'), 'w') as f:
                 f.write('#!/usr/bin/env python3\n')
                 f.write('#\n')
                 f.write('# Outgoing propagation job: ' + __version__ + '\n')
@@ -146,25 +120,19 @@ class Earth:
                 f.write('# Processor=' + uname.processor + '\n')
                 f.write('#\n')
                 f.write('# Setup\n')
-                f.write('# Wedges=' + str(self.wedges) + '\n')
-                f.write('# Bands=' + str(self.bands) + '\n')
+                f.write('# Zlist=' + str(Zlist) + '\n')
+                f.write('# Elist=' + str(Elist) + '\n')
                 f.write('# Runs=' + str(runs) + '\n')
                 f.write('# Cone=' + str(cone) + ' [deg]\n')
                 f.write('# Seed=' + str(seed) + '\n')
                 f.write('#\n')
-                f.write('# Patch\n')
-                f.write('# Phi_lo=' + str(patch.phi_lo) + ' [deg]\n')
-                f.write('# Phi_mid=' + str(patch.phi_mid) + ' [deg]\n')
-                f.write('# Phi_hi=' + str(patch.phi_hi) + ' [deg]\n')
-                f.write('# Theta_lo=' + str(patch.theta_lo) + ' [deg]\n')
-                f.write('# Theta_mid=' + str(patch.theta_mid) + ' [deg]\n')
-                f.write('# Theta_hi=' + str(patch.theta_hi) + ' [deg]\n')
-                f.write('# Zenith=' + str(patch.zenith) + '\n')
-                f.write('#\n')
                 f.write('# Parameters\n')
-                f.write('# Z=' + str(np.abs(Z)) + ' [proton number]\n')
+                f.write('# Earth_Theta=' + str(np.rad2deg(eTh)) + ' [deg]\n')
+                f.write('# Earth_Phi=' + str(np.rad2deg(ePh)) + ' [deg]\n')
+                f.write('# Zenith_Theta=' + str(np.rad2deg(zTh)) + ' [deg]\n')
+                f.write('# Zenith_Phi=' + str(np.rad2deg(zPh)) + ' [deg]\n')
+                f.write('# Zenith=' + str(zenith[run]) + '\n')
                 f.write('# A=' + str(A) + ' [atomic mass units]\n')
-                f.write('# E=' + str(E) + ' [electron volts]\n')
                 f.write('# Max_Step=' + str(max_step) + ' [AU]\n')
                 f.write('# R_Limit=' + str(R_limit) + ' [AU]\n')
                 f.write('# B_Override=' + str(B_override) + ' [T]\n')
@@ -173,46 +141,31 @@ class Earth:
                 f.write('#\n')
                 f.write('# Script\n\n')
                 f.write('import gz\n\n')
-                
-                phis = 2.*np.pi * np.random.random(runs)
-                thetas = cone * np.pi / 180. * np.random.random(runs)
-                for t, p in zip(thetas, phis):
-                    r  = np.cos(t)
-                    th = np.sin(t) * np.cos(p)
-                    ph = np.sin(t) * np.sin(p)
-                    theta = np.arccos(patch.zenith[2])
-                    phi   = np.arctan2(patch.zenith[1], patch.zenith[0])
-                    beta = coordinates.Spherical.toCartesian([r, th, ph], theta, phi)
-                    
-                    if (name_header is not None):
-                        out_name = name_header + '_'
-                    else:
-                        out_name = ''
-                    out_name += str(t_mid) + '_' + str(p_mid) + '_'
-                    out_name += str(Z) + '_' + str(int(E/1e18)) + '_'
-                    out_name += str(int(t * 180. / np.pi)) + '_' + str(int(p * 180./np.pi))
-                    
-                    args  = '[' + str(position[0]) + ', ' + str(position[1]) + ', ' + str(position[2]) + '], '
-                    args += '[' + str(beta[0])     + ', ' + str(beta[1])     + ', ' + str(beta[2])     + '], '
-                    args += str(Z) + ', '
-                    args += str(E) + ', '
-                    args += 'A=' + str(A) + ', '
-                    args += 'max_step=' + str(max_step) + ', '
-                    if (R_limit is not None):
-                        args += 'R_limit=' + str(R_limit) + ', '
-                    args += 'save_path=' + str(out_path) + ', '
-                    args += 'filename=' + "'" + out_name + "'"
-                    f.write('outgoing = gz.path.Outgoing(' + args + ')\n') 
-                    args = ''
-                    if (B_override is not None):
-                        b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
-                        args += 'B_override=' + b_str + ', '  
-                    if (step_override is not None):
-                        args += 'step_override=' + str(step_override) + ', '
-                    args += "algorithm='" + str(algorithm) + "'"
-                    f.write('outgoing.propagate(' + args + ')\n\n')
-      
-        
+    
+                for z in Zlist:
+                    for e in Elist:
+                            
+                        args  = '[' + str(pos[0]) + ', ' + str(pos[1]) + ', ' + str(pos[2]) + '], '
+                        args += '[' + str(bet[0]) + ', ' + str(bet[1]) + ', ' + str(bet[2]) + '], '
+                        args += str(z) + ', '
+                        args += str(e) + ', '
+                        args += 'A=' + str(A) + ', '
+                        args += 'max_step=' + str(max_step) + ', '
+                        if (R_limit is not None):
+                            args += 'R_limit=' + str(R_limit) + ', '
+                        args += 'save_path=' + str(out_path) + ', '
+                        outname = filename + '_' + str(z) + '_' + str(int(e/1e15))
+                        args += 'filename=' + "'" + outname + "'"
+                        f.write('outgoing = gz.path.Outgoing(' + args + ')\n') 
+                        args = ''
+                        if (B_override is not None):
+                            b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
+                            args += 'B_override=' + b_str + ', '  
+                        if (step_override is not None):
+                            args += 'step_override=' + str(step_override) + ', '
+                        args += "algorithm='" + str(algorithm) + "'"
+                        f.write('outgoing.propagate(' + args + ')\n\n')
+
     def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, quick_dist=False,
                       out_path=None, job_path=None, plot=False, histograms=True):
 
@@ -424,3 +377,172 @@ class Earth:
                         g.write('incoming.propagate(' + args + ')\n\n')                
 
         print('Average probability to disinitegrate: ' + str(total_probability / float(len(filelist))))
+        
+        
+    ###########################################################################
+        
+        
+    # OBSOLETE
+    def run(wedges=4, bands=3, Zlist=[2, 26, 92], Elist=[2e18, 20e18, 200e18], runs=1000):
+        earth = Earth(wedges=wedges, bands=bands)
+        for z in Zlist:
+            for e in Elist:
+                earth.outgoing_jobs(z, e, max_step=.01, runs=runs)#, cone=90., B_override=[0,0,0], name_header='try90')
+    
+    # OBSOLETE
+    def __init__(self, wedges=4, bands=3):
+        self.wedges = wedges
+        self.bands = bands
+        
+        self.phi_sep = 360. / wedges
+        self.theta_sep = 180. / bands
+        
+        self.phi_offset = self.phi_sep / 2.
+        self.theta_offset = 0.        
+        
+        self.patches = []
+        for w in range(wedges):
+            for b in range(bands):
+                phi_lo = self.phi_offset + w * self.phi_sep
+                phi_hi = phi_lo + self.phi_sep
+                theta_lo = self.theta_offset + b * self.theta_sep
+                theta_hi = theta_lo + self.theta_sep
+                self.patches.append(Patch(phi_lo, phi_hi, theta_lo, theta_hi))
+
+    # OBSOLETE
+    def draw(self, ax=None):
+        if (ax is None):
+            fig = plt.figure(figsize=[16,16])
+            ax = plt.axes(projection='3d')
+        
+        for patch in self.patches:      
+            phi_lo = patch.phi_lo * np.pi / 180.
+            phi_hi = patch.phi_hi * np.pi / 180.
+            theta_lo = patch.theta_lo * np.pi / 180.
+            theta_hi = patch.theta_hi * np.pi / 180.
+            
+            u, v = np.mgrid[phi_lo:phi_hi:10j, theta_lo:theta_hi:10j]
+            r = units.SI.radius_earth * units.Change.meter_to_AU
+            x = r * np.cos(u)*np.sin(v)
+            y = r * np.sin(u)*np.sin(v)
+            z = r * np.cos(v)
+            x += coordinates.Cartesian.earth[0]
+            y += coordinates.Cartesian.earth[1]
+            z += coordinates.Cartesian.earth[2]
+            ax.plot_surface(x, y, z, color=tuple(np.random.rand(3)))        
+
+    # OBSOLETE
+    def outgoing_jobs(self, Z, E, max_step=.01, A=None, R_limit=None, runs=100, cone=90., 
+                      seed=None, out_path=None, job_path=None, name_header=None, name_tail=None,
+                      B_override=None, step_override=None, algorithm='dop853'):
+        if (seed is not None):
+            np.random.seed(seed)
+        
+        if (job_path is None):
+            job_path = Earth.OUT_JOB_PATH
+        
+        if (not os.path.isdir(job_path)):
+            os.makedirs(job_path)
+        
+        for patch in self.patches:
+            p_mid = int(patch.phi_mid)
+            t_mid = int(patch.theta_mid)
+
+            if (name_header is not None):
+                filename = name_header + '_'
+            else:
+                filename = ''
+            filename += str(t_mid) + '_' + str(p_mid)
+            
+            if (name_tail is not None):
+                filename += '_' + name_tail
+            else:
+                filename += '_' + str(Z) + '_' + str(int(E/1e18))    
+            filename += '.py'
+
+            position = coordinates.Cartesian.earth
+            position = position + patch.zenith * units.SI.radius_earth * units.Change.meter_to_AU
+
+            with open(os.path.join(job_path, filename), 'w') as f:
+                f.write('#!/usr/bin/env python3\n')
+                f.write('#\n')
+                f.write('# Outgoing propagation job: ' + __version__ + '\n')
+                f.write('# Time of writing: ' + str(datetime.datetime.now()) + '\n')        
+                f.write('#\n')
+                f.write('# Platform\n')
+                uname = platform.uname()
+                f.write('# Node=' + uname.node + '\n')
+                f.write('# Machine=' + uname.machine + '\n')
+                f.write('# System=' + uname.system + '\n')
+                f.write('# Version=' + uname.version + '\n')
+                f.write('# Release=' + uname.release + '\n')
+                f.write('# Processor=' + uname.processor + '\n')
+                f.write('#\n')
+                f.write('# Setup\n')
+                f.write('# Wedges=' + str(self.wedges) + '\n')
+                f.write('# Bands=' + str(self.bands) + '\n')
+                f.write('# Runs=' + str(runs) + '\n')
+                f.write('# Cone=' + str(cone) + ' [deg]\n')
+                f.write('# Seed=' + str(seed) + '\n')
+                f.write('#\n')
+                f.write('# Patch\n')
+                f.write('# Phi_lo=' + str(patch.phi_lo) + ' [deg]\n')
+                f.write('# Phi_mid=' + str(patch.phi_mid) + ' [deg]\n')
+                f.write('# Phi_hi=' + str(patch.phi_hi) + ' [deg]\n')
+                f.write('# Theta_lo=' + str(patch.theta_lo) + ' [deg]\n')
+                f.write('# Theta_mid=' + str(patch.theta_mid) + ' [deg]\n')
+                f.write('# Theta_hi=' + str(patch.theta_hi) + ' [deg]\n')
+                f.write('# Zenith=' + str(patch.zenith) + '\n')
+                f.write('#\n')
+                f.write('# Parameters\n')
+                f.write('# Z=' + str(np.abs(Z)) + ' [proton number]\n')
+                f.write('# A=' + str(A) + ' [atomic mass units]\n')
+                f.write('# E=' + str(E) + ' [electron volts]\n')
+                f.write('# Max_Step=' + str(max_step) + ' [AU]\n')
+                f.write('# R_Limit=' + str(R_limit) + ' [AU]\n')
+                f.write('# B_Override=' + str(B_override) + ' [T]\n')
+                f.write('# Step_Override=' + str(step_override) + ' [AU]\n')
+                f.write('# Algorithm=' + str(algorithm) + '\n')
+                f.write('#\n')
+                f.write('# Script\n\n')
+                f.write('import gz\n\n')
+                
+                phis = 2.*np.pi * np.random.random(runs)
+                thetas = np.ones(runs) * 89. * np.pi/180. #cone * np.pi / 180. * np.random.random(runs)
+                for t, p in zip(thetas, phis):
+                    r  = np.cos(t)
+                    th = np.sin(t) * np.cos(p)
+                    ph = np.sin(t) * np.sin(p)
+                    theta = np.arccos(patch.zenith[2])
+                    phi   = np.arctan2(patch.zenith[1], patch.zenith[0])
+                    beta = coordinates.Spherical.toCartesian([r, th, ph], theta, phi)
+                    
+                    if (name_header is not None):
+                        out_name = name_header + '_'
+                    else:
+                        out_name = ''
+                    out_name += str(t_mid) + '_' + str(p_mid) + '_'
+                    out_name += str(Z) + '_' + str(int(E/1e18)) + '_'
+                    out_name += str(int(t * 180. / np.pi)) + '_' + str(int(p * 180./np.pi))
+                    
+                    args  = '[' + str(position[0]) + ', ' + str(position[1]) + ', ' + str(position[2]) + '], '
+                    args += '[' + str(beta[0])     + ', ' + str(beta[1])     + ', ' + str(beta[2])     + '], '
+                    args += str(Z) + ', '
+                    args += str(E) + ', '
+                    args += 'A=' + str(A) + ', '
+                    args += 'max_step=' + str(max_step) + ', '
+                    if (R_limit is not None):
+                        args += 'R_limit=' + str(R_limit) + ', '
+                    args += 'save_path=' + str(out_path) + ', '
+                    args += 'filename=' + "'" + out_name + "'"
+                    f.write('outgoing = gz.path.Outgoing(' + args + ')\n') 
+                    args = ''
+                    if (B_override is not None):
+                        b_str = '[' + str(B_override[0]) + ', ' + str(B_override[1]) + ', ' + str(B_override[2]) + ']'
+                        args += 'B_override=' + b_str + ', '  
+                    if (step_override is not None):
+                        args += 'step_override=' + str(step_override) + ', '
+                    args += "algorithm='" + str(algorithm) + "'"
+                    f.write('outgoing.propagate(' + args + ')\n\n')
+      
+                

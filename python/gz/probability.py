@@ -17,6 +17,8 @@ __updated__     = '13 May 2019'
 import numpy as np
 
 from scipy import integrate
+from scipy import interpolate
+from scipy import optimize
 
 from . import units
 from . import cross_section
@@ -31,36 +33,31 @@ def oneOrMore(atten_length, distance):
     return 1. - p0
 
 
-def random(x, pdf, size, seed=None, plottables=False, CDF=False):
+def random(x, pdf, size, algorithm='akima', seed=None, plottables=False, CDF=False):
     x = np.asarray(x)
     pdf = np.asarray(pdf)
-
     cdf = np.zeros(x.size)
-    for i in range(x.size):
-        if (i == 0):
-            continue
-        cdf[i-1] = integrate.simps(pdf[:i], x=x[:i])
-    cdf[-1] = cdf[-2]
-    
+
+    if (algorithm == 'simps'):
+        for i in range(x.size):
+            if (i == 0):
+                continue
+            cdf[i-1] = integrate.simps(pdf[:i], x=x[:i])
+        cdf[-1] = cdf[-2]        
+    else:
+        pdf_akima = interpolate.Akima1DInterpolator(x, pdf)
+        for i in range(x.size):
+            cdf[i] = np.asscalar(pdf_akima.integrate(x[0], x[i]))
+
+    cdf_akima = interpolate.Akima1DInterpolator(x, cdf)
+
     if (seed is not None):
         np.random.seed(seed)
     val = (cdf[-1] - cdf[0]) * np.random.random(size) + cdf[0]
 
     out = []
     for v in val:
-        for i, c in enumerate(cdf):
-            if (c < v):
-                continue
-            if (c == v):
-                out.append(x)
-                break
-            c1 = cdf[i-1]
-            c2 = c
-            x1 = x[i-1]
-            x2 = x[i]
-            slope = (x2 - x1) / (c2 - c1)
-            out.append(slope * (v - c1) + x1)
-            break
+        out.append(np.asscalar(cdf_akima.solve(v)))
     
     if (size == 1):
         out = out[0]

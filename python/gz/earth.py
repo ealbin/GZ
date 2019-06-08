@@ -168,7 +168,7 @@ class Earth:
 
     def incoming_jobs(directory=None, filelist=None, runs=100, seed=None, quick_dist=False,
                       out_path=None, job_path=None, plot=False, histograms=True):
-
+        
         if (seed is not None):
             np.random.seed(seed)
         
@@ -183,7 +183,7 @@ class Earth:
             for file in os.listdir(directory):
                 if (file.endswith('.outgoing')):
                     filelist.append(os.path.join(directory, file))
-
+                    
         if (plot):
             plt.figure(figsize=[15,15])
 
@@ -267,14 +267,14 @@ class Earth:
                         f.seek(0)
                         seek = _
                         break
-                
+                    
                 for line in f.readlines()[seek + 1:]:
                     telemetry.append(np.asarray(line.split(), dtype=np.float64))
                 
                 origin = telemetry[0][:3]
                 position = telemetry[-1][:3]
                 beta = -1. * telemetry[-1][3:6]
-                
+
                 if (quick_dist):
                     cdf = [1.]
                     rand_dists = telemetry[-1][6] * np.random.random(runs)

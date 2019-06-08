@@ -129,7 +129,7 @@ class Outgoing(Path):
     DEFAULT_SAVE_PATH = './telemetry'
     
     def __init__(self, position, beta, Z, E,
-                 A=None, max_step=None, R_limit=6., zigzag=False, 
+                 A=None, max_step=None, R_limit=6., zigzag=False,
                  save=True, save_path=None, filename=None):
         """
         position: np.array(x,y,z) AU start position on earth
@@ -170,19 +170,23 @@ class Outgoing(Path):
         if (B_override is not None):
             self.B = np.asarray(B_override, dtype=np.float64)
         else:
-            self.B = magnetic_field.cartesianTesla(self.position)         
+            if (self.interpolate_B):
+                self.B = magnetic_field.cartesianTesla(self.position)         
+            else:
+                self.B = magnetic_field.cartesianTesla(self.position, close2sun=100.)
         
     def _set_stepsize(self):
         # any special needs here
         Path._set_stepsize(self)
     
-    def propagate(self, B_override=None, step_override=None, algorithm='dop853'):
+    def propagate(self, B_override=None, interpolate_B=True, step_override=None, algorithm='dop853'):
         """
         Propagates one step
         B_override: use this B instead of Bfield
         step_override: use this step instead of step()
         """
         self.B_override = B_override
+        self.interpolate_B = interpolate_B
         self.step_override = step_override
         
         self._set_B(B_override=B_override)

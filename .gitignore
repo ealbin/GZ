@@ -3,5 +3,6 @@
 *.ipynb_checkpoints
 *.swp
 *.Tesla
+/python/*.txt
 /python/out_jobs/*
 /python/in_jobs/*

@@ -8,7 +8,7 @@ import time
 
 import gz
 
-def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zigzag=False):
+def run(Z=92, E=2e18, beta=[0, 1, 0], B_override=[0,0,1e-4], plot=True, positions=None, betas=None, zigzag=False, interpolate_B=True):
     start = time.time()
     
     if (positions is None):
@@ -25,15 +25,15 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
         e_beta = betas[:3]
         d_beta = betas[3:]
 
-    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag, save=False, max_step=.1)    
-    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag, save=False, max_step=.1)
+    eul_out = gz.path.Outgoing(e_position, e_beta, Z, E, zigzag=zigzag, save=False, max_step=.01)    
+    dop_out = gz.path.Outgoing(d_position, d_beta, Z, E, zigzag=zigzag, save=False, max_step=.01)
     
     eul_start = time.time()
-    eul_out.propagate(B_override=[0,0,1e-4], algorithm='euler')
+    eul_out.propagate(B_override=B_override, interpolate_B=interpolate_B, algorithm='euler')
     eul_elapsed = time.time() - eul_start
     
     dop_start = time.time()
-    dop_out.propagate(B_override=[0,0,1e-4], algorithm='dop853')
+    dop_out.propagate(B_override=B_override, interpolate_B=interpolate_B, algorithm='dop853')
     dop_elapsed = time.time() - dop_start
 
     ex = [t[0] for t in eul_out.telemetry]
@@ -65,7 +65,7 @@ def run(Z=92, E=2e18, beta=[0, 1, 0], plot=True, positions=None, betas=None, zig
         return ex, ey, eul_out.position, eul_out.beta, dx, dy, dop_out.position, dop_out.beta
 
 
-def zigzag(Z=92, E=2e18, beta=[0,1,0], trips=10):
+def zigzag(Z=92, E=2e18, beta=[0,1,0], trips=10, B_override=[0,0,1e-4]):
     """dosen't work without editing path.py, line 174 to:
         while (self.distance < self.R_limit + Outgoing.LIMIT_BUFFER): # and self.dist_sun < self.R_limit):            
     """
@@ -78,9 +78,12 @@ def zigzag(Z=92, E=2e18, beta=[0,1,0], trips=10):
     ey = []
     dx = []
     dy = []
+    interpolate_B = True
     for _ in range(2 * trips):
-        print('running ' + str(_+1) + ' of ' + str(2*trips))
-        exx, eyy, epos, eb, dxx, dyy, dpos, db = run(Z=Z, E=E, betas=betas, plot=False, positions=positions, zigzag=True)
+        print('running ' + str(_+1) + ' of ' + str(2*trips), end=': ')
+        start = time.time()
+        exx, eyy, epos, eb, dxx, dyy, dpos, db = run(Z=Z, E=E, betas=betas, B_override=B_override, plot=False, positions=positions, zigzag=True, interpolate_B=interpolate_B)
+        print(time.time() - start)
         ex.append(exx)
         ey.append(eyy)
         dx.append(dxx)
@@ -90,6 +93,7 @@ def zigzag(Z=92, E=2e18, beta=[0,1,0], trips=10):
         d_beta = -1. * db
         positions = np.concatenate([epos, dpos])
         betas = np.concatenate([e_beta, d_beta])
+        #interpolate_B = not interpolate_B
 
     ex = np.concatenate(ex)
     ey = np.concatenate(ey)

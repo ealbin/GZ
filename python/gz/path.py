@@ -477,7 +477,8 @@ class Incoming(Outgoing):
         if (self.save_path is None):
             self.save_path = Outgoing.DEFAULT_SAVE_PATH
         
-        self.save_path = os.path.join(self.save_path, str(self.Z))   
+        subdir = str(np.abs(self.Z)) + '_' + str(int(self.E/1e15))
+        self.save_path = os.path.join(self.save_path, subdir)   
         if (not os.path.isdir(self.save_path)):
             os.makedirs(self.save_path)
         

@@ -428,7 +428,7 @@ class Incoming(Outgoing):
         self.dn_path = Incoming(None, self.position, beta_4, Zdn, None, e4, None, max_step=self.max_step) # A-1 nucleus
 
         for subpath in [self.p_path, self.n_path, self.dp_path, self.dn_path]:
-            subpath.sub_propogate(B_override=B_override, step_override=None, algorithm=algorithm)
+            subpath.sub_propogate(B_override=B_override, interpolate_B=self.interpolate_B, step_override=None, algorithm=algorithm)
                         
         self.elapsed_sec = time.time() - start
             
@@ -437,9 +437,10 @@ class Incoming(Outgoing):
             self.save_telemetry()
             
     # Sub-propogate children
-    def sub_propogate(self, B_override=None, step_override=None, algorithm='dop853'):
+    def sub_propogate(self, B_override=None, interpolate_B=True, step_override=None, algorithm='dop853'):
 
         self.B_override = B_override
+        self.interpolate_B = interpolate_B
         self.step_override = step_override
 
         Outgoing._set_B(self, B_override=B_override)

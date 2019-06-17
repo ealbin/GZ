@@ -312,6 +312,7 @@ class Earth:
                                 
                 filename = os.path.basename(file).rstrip('.outgoing') + '.py'                
                 with open(os.path.join(job_path, filename), 'w') as g:
+                    print('writing ' + filename, flush=True)
                     g.write('#!/usr/bin/env python3\n')
                     g.write('#\n')
                     g.write('# Incoming propagation job: ' + __version__ + '\n')
@@ -376,7 +377,7 @@ class Earth:
                         args += "algorithm='" + str(algorithm) + "'"
                         g.write('incoming.propagate(' + args + ')\n\n')                
 
-        print('Average probability to disinitegrate: ' + str(total_probability / float(len(filelist))))
+        print('Average probability to disinitegrate: ' + str(total_probability / float(len(filelist))), flush=True)
         
         
     ###########################################################################

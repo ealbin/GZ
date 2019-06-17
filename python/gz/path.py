@@ -331,13 +331,14 @@ class Incoming(Outgoing):
         else:
             Path._set_stepsize(self)         
             
-    def propagate(self, B_override=None, step_override=None, algorithm='dop853', seed=None):
+    def propagate(self, B_override=None, interpolate_B=True, step_override=None, algorithm='dop853', seed=None):
         """
         Propagates one step
         B_override: use this B instead of Bfield
         step_override: use this step instead of step()
         """
         self.B_override = B_override
+        self.interpolate_B = interpolate_B
         self.step_override = step_override
 
         Outgoing._set_B(self, B_override=B_override)

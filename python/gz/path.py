@@ -284,6 +284,8 @@ class Outgoing(Path):
                 for val in _:
                     f.write(str(val) + ' ')
                 f.write('\n')
+            f.write('\n')
+            f.write('# Finished\n')
 
 
 class Incoming(Outgoing):
@@ -563,3 +565,5 @@ class Incoming(Outgoing):
                 for val in _:
                     f.write(str(val) + ' ')                    
                 f.write('\n')
+            f.write('\n')
+            f.write('# Finished\n')

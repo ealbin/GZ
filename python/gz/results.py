@@ -197,6 +197,10 @@ class Results:
                 dn_telemetry = []
                 seek = 0
                 lines = f.readlines()
+                if (not lines[-1].startswith('# Finished')):
+                    continue
+                lines = lines[:-2]
+                
                 for _, line in enumerate(lines):
                     
                     search = '# Z='

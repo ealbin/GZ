@@ -28,17 +28,6 @@ class Result:
         self.filename = os.path.basename(filename)
         self.full_telemetry = full_telemetry
         
-        """
-        tokens = self.filename.split('_')
-        print(tokens)
-        if (tokens[0][0].isalpha()):
-            self.theta_mid = int(tokens[1])
-            self.phi_mid = int(tokens[2])
-        else:
-            self.theta_mid = int(tokens[0])
-            self.phi_mid = int(tokens[1])
-        """
-        
     def setZ(self, Z):
         self.Z = Z
     
@@ -155,8 +144,7 @@ class Result:
         self.dp_last = self.fix(self.dp_telemetry[-1])
         self.n_last  = self.fix(self.n_telemetry[-1])
         self.dn_last = self.fix(self.dn_telemetry[-1]) 
-        return
-        
+        return        
             
 
 class Results:
@@ -181,7 +169,9 @@ class Results:
         self.filelist = filelist 
         self.results = []
 
-        for file in filelist:
+        tot = float(len(filelist))
+        for i, file in enumerate(filelist):
+            print('\r' + (" "*20) + '\rloading... {:.2f}%'.format((i+1.)/tot*100.), flush=True, end='')
             with open(file, 'r') as f:
                 Z = None
                 A = None
@@ -337,7 +327,7 @@ class Results:
                     print('FORMAT MIS-MATCH')
                     return
                 
-                lines = lines[seek +2:]
+                lines = lines[seek + 2:]
                 for line in lines:
                     dn_telemetry.append(np.asarray(line.split(), dtype=np.float64))
                     
@@ -359,6 +349,8 @@ class Results:
                 result.setNDaughterTelemetry(dn_telemetry)
                 self.results.append(result)
 
+        print('done!')
+        
     def HaversineSeparation(pos1, pos2):
         """ Normalized the earth radius aka 1 = Re
         """
@@ -428,6 +420,7 @@ class Results:
         print('One, not both:  ' + str(n_solo) + ', ' + str(n_solo / len(self.results) * 100.) + '%')
         print('Neutron none:   ' + str(n_none) + ', ' + str(n_none / len(self.results) * 100.) + '%')
 
+        """
         print()
         print(np.asarray(p_list)[p_xor_dp])
         print()
@@ -475,6 +468,7 @@ class Results:
                 plt.plot(pos_n)
                 plt.plot(pos_dn)
             plt.xlim(.9,1.1)
+        """
         
         #fig1 = plt.figure(figsize=[15,15])
         #bins = np.linspace(0., 1 + 100 * atol, 100)
@@ -502,9 +496,10 @@ class Results:
         n_under10 = len(dist[dist<10.])
         n_under50 = len(dist[dist<50.])        
         print()
-        print('Fraction under 1 m:  ' + str(n_under1/len(dist)*100.))
-        print('Fraction under 10 m: ' + str(n_under10/len(dist)*100.))
-        print('Fraction under 50 m: ' + str(n_under50/len(dist)*100.))
+        print('Of those who have a pair,')
+        print('\tFraction under 1 m:  ' + str(n_under1/len(dist)*100.)  + "%")
+        print('\tFraction under 10 m: ' + str(n_under10/len(dist)*100.) + "%")
+        print('\tFraction under 50 m: ' + str(n_under50/len(dist)*100.) + "%")
         non_zero = dist[dist > 0.]
         lo_x = np.log10(min(non_zero) / 100.)
         np.place(dist, dist==0., lo_x)

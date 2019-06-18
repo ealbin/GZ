@@ -28,14 +28,17 @@ class Result:
         self.filename = os.path.basename(filename)
         self.full_telemetry = full_telemetry
         
+        """
         tokens = self.filename.split('_')
+        print(tokens)
         if (tokens[0][0].isalpha()):
             self.theta_mid = int(tokens[1])
             self.phi_mid = int(tokens[2])
         else:
             self.theta_mid = int(tokens[0])
             self.phi_mid = int(tokens[1])
-            
+        """
+        
     def setZ(self, Z):
         self.Z = Z
     

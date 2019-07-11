@@ -269,6 +269,8 @@ class Earth:
                         break
                     
                 for line in f.readlines()[seek + 1:]:
+                    if (line.strip() == ''):
+                        break
                     telemetry.append(np.asarray(line.split(), dtype=np.float64))
                 
                 origin = telemetry[0][:3]

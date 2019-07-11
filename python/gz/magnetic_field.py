@@ -218,16 +218,22 @@ def cartesianTesla( cartesian_pos, close2sun=0.01 ):
     For spacelimit==6 and resolution==60, interpolation is acceptable up to close2sun==0.01.
     """
     cartesian_pos = np.array(cartesian_pos)
-    if np.sqrt(np.dot(cartesian_pos, cartesian_pos)) < close2sun:
+    distance = np.sqrt(np.dot(cartesian_pos, cartesian_pos))
+    if distance < close2sun:
         return heliosphere_model.sumBfieldTesla(cartesian_pos)
     
+    global __spacelimit
     global __InterpolateBx, __InterpolateBy, __InterpolateBz
     if ( (__InterpolateBx is not None) and (__InterpolateBy is not None) and
          (__InterpolateBz is not None) ):
-        Bx = __InterpolateBx(cartesian_pos)
-        By = __InterpolateBy(cartesian_pos)
-        Bz = __InterpolateBz(cartesian_pos)
-        return np.array([ Bx, By, Bz ]).flatten()
+        
+        if distance > __spacelimit:
+            return heliosphere_model.sumBfieldTesla(cartesian_pos)
+        else:
+            Bx = __InterpolateBx(cartesian_pos)
+            By = __InterpolateBy(cartesian_pos)
+            Bz = __InterpolateBz(cartesian_pos)
+            return np.array([ Bx, By, Bz ]).flatten()
     else:
         meshes = precompute()
         x  = meshes['x']

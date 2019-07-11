@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 import gz
 
@@ -22,3 +23,32 @@ def run(position=[1,0,0], beta=[-1,0,0], E=2e18, samples=100000):
     plt.legend(fontsize='xx-large')
     plt.xlim(ebins[0], ebins[-1])
     plt.ylim(1e-6, 1e1)
+    
+    
+def longshot(position=[1,0,0], beta=[1,0,0], Z=92, E=1e18, R_limit=40, outname='out_test'):
+
+    outpath = gz.earth.Earth.OUT_JOB_PATH + gz.path.Outgoing.DEFAULT_SAVE_PATH[1:]
+    subdir = str(np.abs(Z)) + '_' + str(int(E/1e15))
+    
+    print('Loading HMF interpolation maps... ', end='', flush=True)
+    start = time.time()
+    _ = gz.magnetic_field.cartesianTesla(gz.coordinates.Cartesian.earth)
+    print('{:.5f} sec'.format(time.time() - start))
+    
+    print('Working on outgoing... ', end='', flush=True)
+    start = time.time()
+    outgoing = gz.path.Outgoing(position, beta, Z, E, max_step=.01, 
+                                R_limit=R_limit, save_path=outpath, filename=outname)
+    outgoing.propagate()
+    print('{:.5f} sec'.format(time.time() - start))
+    
+    outfile =  outpath + '/' + subdir + '/' + outname + '.outgoing'
+    
+    print('Working on probability... ', flush=True)
+    start = time.time()
+    gz.earth.Earth.incoming_jobs(filelist=[outfile], runs=1, plot=True, histograms=False)
+    print('time: {:.5f} sec'.format(time.time() - start))
+    
+    print('finished')
+    print("(don't forget to delete output file before re-running)")
+    print(outfile)

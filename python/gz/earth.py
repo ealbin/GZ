@@ -283,6 +283,7 @@ class Earth:
                     if (runs == 1):
                         rand_dists = rand_dists[0]
                 else:
+                    edist = []
                     dists = []
                     probs = []
                     max_dist = telemetry[-1][6]
@@ -295,6 +296,8 @@ class Earth:
                         t = telemetry[length - _ - 1]
                         pos = t[:3]
                         bet = -1. * t[3:6]
+                        epos = pos - coordinates.Cartesian.earth
+                        edist.append(np.sqrt(np.dot(epos, epos)))
                         dis = max_dist - t[6]
                         step = np.abs(telemetry[length - _][6] - t[6])
                         atten = probability.Solar.attenuation(pos, bet, Z, E, mass_number=A)
@@ -311,7 +314,13 @@ class Earth:
                         plt.xlim(x[0], x[-1])
                         plt.yscale('log')
                         continue
-                                
+                
+                filename = os.path.basename(file).rstrip('.outgoing') + '.pdf'
+                with open(os.path.join(job_path, filename), 'w') as g:
+                    g.write('# dist from earth [AU], return path dist [AU], pdf, cdf\n')
+                    for e, d, p, c in zip(edist, x, pdf, cdf):
+                        g.write('{}  {}  {}  {}\n'.format(e, d, p, c))
+                
                 filename = os.path.basename(file).rstrip('.outgoing') + '.py'                
                 with open(os.path.join(job_path, filename), 'w') as g:
                     print('writing ' + filename, flush=True)

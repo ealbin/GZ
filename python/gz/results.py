@@ -398,10 +398,11 @@ class Results:
        
         p_dp_both = p_near * dp_near
         n_dn_both = n_near * dn_near
-    
+        
+        """
         p_xor_dp = (p_near * ~dp_near) + (~p_near * dp_near)
         n_xor_dn = (n_near * ~dn_near) + (~n_near * dn_near)
-
+        
         p_neither = ~(p_dp_both + p_xor_dp)
         n_neither = ~(n_dn_both + n_xor_dn)
         
@@ -420,7 +421,6 @@ class Results:
         print('One, not both:  ' + str(n_solo) + ', ' + str(n_solo / len(self.results) * 100.) + '%')
         print('Neutron none:   ' + str(n_none) + ', ' + str(n_none / len(self.results) * 100.) + '%')
 
-        """
         print()
         print(np.asarray(p_list)[p_xor_dp])
         print()
@@ -481,17 +481,24 @@ class Results:
         
         p_dp_dist = []
         for pair in np.asarray(self.results)[p_dp_both]:
-            p_dp_dist.append(Results.HaversineSeparation(pair.p_last, pair.dp_last))
+            _p  = pair.p_last  - coordinates.Cartesian.earth
+            _dp = pair.dp_last - coordinates.Cartesian.earth
+            p_dp_dist.append(Results.HaversineSeparation(_p, _dp))
             
         n_dn_dist = []
         for pair in np.asarray(self.results)[n_dn_both]:
-            n_dn_dist.append(Results.HaversineSeparation(pair.n_last, pair.dn_last))
+            _n  = pair.n_last  - coordinates.Cartesian.earth
+            _dn = pair.dn_last - coordinates.Cartesian.earth
+            n_dn_dist.append(Results.HaversineSeparation(_n, _dn))
         
-        p_dp_dist = np.asarray(p_dp_dist) * units.SI.radius_earth
-        n_dn_dist = np.asarray(n_dn_dist) * units.SI.radius_earth
+        #!!!!!! KILOMETERS !!!!!
+        p_dp_dist = np.asarray(p_dp_dist) * units.SI.radius_earth / 1000.
+        n_dn_dist = np.asarray(n_dn_dist) * units.SI.radius_earth / 1000.
         
-        fig2 = plt.figure(figsize=[15,15])
+        fig2 = plt.figure(figsize=[20,15])
+        plt.rc('font', size=24)
         dist = np.concatenate([p_dp_dist, n_dn_dist])
+        """
         n_under1 = len(dist[dist<1.])
         n_under10 = len(dist[dist<10.])
         n_under50 = len(dist[dist<50.])        
@@ -500,25 +507,33 @@ class Results:
         print('\tFraction under 1 m:  ' + str(n_under1/len(dist)*100.)  + "%")
         print('\tFraction under 10 m: ' + str(n_under10/len(dist)*100.) + "%")
         print('\tFraction under 50 m: ' + str(n_under50/len(dist)*100.) + "%")
+
         non_zero = dist[dist > 0.]
         lo_x = np.log10(min(non_zero) / 100.)
         np.place(dist, dist==0., lo_x)
         hi_x = np.log10(max(dist) * 10.)
+        """
+        lo_x = -3
+        hi_x = 4.5
         bins = np.logspace(lo_x, hi_x, 100)
-        n1, b, p = plt.hist(p_dp_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('b',.3), label='proton-daughter')
-        n2, b, p = plt.hist(n_dn_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('r',.3), label='neutron-daughter')
+        n1, b, p = plt.hist(p_dp_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('b',.3), label='p-channel')
+        n2, b, p = plt.hist(n_dn_dist, bins=bins, density=False, log=True, color=mpl.colors.to_rgba('r',.3), label='n-channel')
         n = np.concatenate((n1[n1>0], n2[n2>0]))
         lo = np.min(n) / 2.
         hi = np.max(n) * 2.
-        plt.plot([1e0,1e0],[lo, hi],'k')
-        plt.plot([1e1,1e1],[lo, hi],'k--')
-        plt.plot([1e2,1e2],[lo, hi],'k.')
+        plt.plot([1e0,1e0],[lo, hi],'k:')
+        _d = np.pi * units.SI.radius_earth / 1000.
+        plt.plot([_d, _d],[lo, hi],'k:')
+        plt.xlabel('Nucleon-Fragment Great Circle Separation Distance [kilometers]')
+        plt.ylabel('Counts')
         plt.xscale('log')
         plt.xlim(bins[0], bins[-1])
         plt.ylim(lo, hi)
         plt.legend()
+        plt.tight_layout()
         plt.show()
         
+        """
         mean = np.mean(p_dp_dist)
         maxx = np.max(p_dp_dist)
         minn = np.min(p_dp_dist)
@@ -535,3 +550,4 @@ class Results:
         print('\t' + str(mean))
         print('\t' + str(maxx))
         print('\t' + str(minn))
+        """

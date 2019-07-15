@@ -78,7 +78,7 @@ class HailMary:
                 _dp_th = np.rad2deg(np.arccos(_dp[2]))
                 _p_ph  = np.rad2deg(np.arctan2(_p[1],  _p[0] ))
                 _dp_ph = np.rad2deg(np.arctan2(_dp[1], _dp[0]))
-                p_record.append([_p_th,  _p_ph,  _dp_th, _dp_ph, _dist, _start])
+                p_record.append([_p_th,  _p_ph,  _dp_th, _dp_ph, _dist, _start, pair.filename])
 
             n_dn_dist = []
             n_record = []
@@ -101,7 +101,7 @@ class HailMary:
                 _dn_th = np.rad2deg(np.arccos(_dn[2]))
                 _n_ph  = np.rad2deg(np.arctan2(_n[1],  _n[0] ))
                 _dn_ph = np.rad2deg(np.arctan2(_dn[1], _dn[0]))
-                n_record.append([_n_th,  _n_ph, _dn_th, _dn_ph, _dist, _start])        
+                n_record.append([_n_th,  _n_ph, _dn_th, _dn_ph, _dist, _start, pair.filename])        
                                    
             mean = np.mean(p_dp_dist)
             maxx = np.max(p_dp_dist)
@@ -123,12 +123,12 @@ class HailMary:
             
             f.write('# Proton / Z-1 Fragment\n')
             f.write('# proton theta [deg], proton phi [deg], Z-1 theta, Z-1 phi, separation [km], dist to disintegration pt [earth radii]\n')
-            for pth, pph, dth, dph, d, s in p_record:
-                f.write('{} {} {} {} {} {}\n'.format(pth, pph, dth, dph, d, s))
+            for pth, pph, dth, dph, d, s, fn in p_record:
+                f.write('{} {} {} {} {} {} {}\n'.format(pth, pph, dth, dph, d, s, fn))
             f.write('\n\n')
 
             f.write('# Neutron / Z Fragment\n')
             f.write('# neutron theta [deg], neutron phi [deg], Z theta, Z phi, separation [km], dist to disintegration pt [earth radii]\n')
-            for nth, nph, dth, dph, d, s in n_record:
-                f.write('{} {} {} {} {} {}\n'.format(nth, nph, dth, dph, d, s))
+            for nth, nph, dth, dph, d, s, fn in n_record:
+                f.write('{} {} {} {} {} {} {}\n'.format(nth, nph, dth, dph, d, s, fn))
             

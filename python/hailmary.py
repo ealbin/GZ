@@ -62,20 +62,23 @@ class HailMary:
             for pair in np.asarray(self.results)[p_dp_both]:
                 _p  = pair.p_last  - coordinates.Cartesian.earth
                 _dp = pair.dp_last - coordinates.Cartesian.earth
-                
+                                
                 #!!!! KILOMETERS !!!!
                 _dist = Results.HaversineSeparation(_p, _dp)
                 _dist = _dist * units.SI.radius_earth / 1000.
                 p_dp_dist.append(_dist)
                 
+                _start = pair.p_telemetry[0][:3] - coordinates.Cartesian.earth
+                _start = np.sqrt(np.dot(_start, _start))
+                _start = _start * units.Change.AU_to_meter / units.SI.radius_earth
+
                 _p  = _p  / np.sqrt(np.dot(_p,  _p ))
                 _dp = _dp / np.sqrt(np.dot(_dp, _dp))
                 _p_th  = np.rad2deg(np.arccos(_p[2] ))
                 _dp_th = np.rad2deg(np.arccos(_dp[2]))
                 _p_ph  = np.rad2deg(np.arctan2(_p[1],  _p[0] ))
                 _dp_ph = np.rad2deg(np.arctan2(_dp[1], _dp[0]))
-                p_record.append([_p_th,  _p_ph,  _dist])
-                p_record.append([_dp_th, _dp_ph, _dist])                
+                p_record.append([_p_th,  _p_ph,  _dp_th, _dp_ph, _dist, _start])
 
             n_dn_dist = []
             n_record = []
@@ -88,14 +91,17 @@ class HailMary:
                 _dist = _dist * units.SI.radius_earth / 1000.
                 n_dn_dist.append(_dist)
 
+                _start = pair.n_telemetry[0][:3] - coordinates.Cartesian.earth
+                _start = np.sqrt(np.dot(_start, _start))
+                _start = _start * units.Change.AU_to_meter / units.SI.radius_earth
+
                 _n  = _n  / np.sqrt(np.dot(_n,  _n ))
                 _dn = _dn / np.sqrt(np.dot(_dn, _dn))
                 _n_th  = np.rad2deg(np.arccos(_n[2] ))
                 _dn_th = np.rad2deg(np.arccos(_dn[2]))
                 _n_ph  = np.rad2deg(np.arctan2(_n[1],  _n[0] ))
                 _dn_ph = np.rad2deg(np.arctan2(_dn[1], _dn[0]))
-                n_record.append([_n_th,  _n_ph,  _dist])
-                n_record.append([_dn_th, _dn_ph, _dist])                
+                n_record.append([_n_th,  _n_ph, _dn_th, _dn_ph, _dist, _start])        
                                    
             mean = np.mean(p_dp_dist)
             maxx = np.max(p_dp_dist)
@@ -116,13 +122,13 @@ class HailMary:
             f.write('\n\n')
             
             f.write('# Proton / Z-1 Fragment\n')
-            f.write('# theta [deg], phi [deg], separation [km]\n')
-            for th, ph, d in p_record:
-                f.write('{} {} {}\n'.format(th, ph, d))
+            f.write('# proton theta [deg], proton phi [deg], Z-1 theta, Z-1 phi, separation [km], dist to disintegration pt [earth radii]\n')
+            for pth, pph, dth, dph, d, s in p_record:
+                f.write('{} {} {} {} {} {}\n'.format(pth, pph, dth, dph, d, s))
             f.write('\n\n')
 
             f.write('# Neutron / Z Fragment\n')
-            f.write('# theta [deg], phi [deg], separation [km]\n')
-            for th, ph, d in n_record:
-                f.write('{} {} {}\n'.format(th, ph, d))
+            f.write('# neutron theta [deg], neutron phi [deg], Z theta, Z phi, separation [km], dist to disintegration pt [earth radii]\n')
+            for nth, nph, dth, dph, d, s in n_record:
+                f.write('{} {} {} {} {} {}\n'.format(nth, nph, dth, dph, d, s))
             
